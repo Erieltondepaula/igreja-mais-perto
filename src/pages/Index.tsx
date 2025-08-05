@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Member, MemberFilters } from '@/types/member';
 import { mockMembers } from '@/data/mockMembers';
 import { filterMembers } from '@/utils/memberUtils';
@@ -14,11 +14,26 @@ import { useToast } from '@/hooks/use-toast';
 const Index = () => {
   const [members, setMembers] = useState<Member[]>(mockMembers);
   const [filters, setFilters] = useState<MemberFilters>({});
+  const memberListRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const filteredMembers = useMemo(() => {
     return filterMembers(members, filters);
   }, [members, filters]);
+
+  const handleFiltersChange = (newFilters: MemberFilters) => {
+    setFilters(newFilters);
+    
+    // Se filtro de aniversariantes foi ativado, rolar para a lista
+    if ((newFilters.aniversariantesDoMes || newFilters.aniversariantesDoDia) && memberListRef.current) {
+      setTimeout(() => {
+        memberListRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 100);
+    }
+  };
 
   const handleImport = (importedMembers: Partial<Member>[]) => {
     const newMembers: Member[] = importedMembers.map((member, index) => ({
@@ -93,7 +108,7 @@ const Index = () => {
         <MemberFiltersComponent 
           members={members} 
           filters={filters} 
-          onFiltersChange={setFilters} 
+          onFiltersChange={handleFiltersChange} 
         />
 
         {/* Charts Row */}
@@ -106,7 +121,9 @@ const Index = () => {
         <NeighborhoodMap members={filteredMembers} />
 
         {/* Member List */}
-        <MemberList members={filteredMembers} />
+        <div ref={memberListRef}>
+          <MemberList members={filteredMembers} filters={filters} />
+        </div>
       </div>
     </div>
   );
