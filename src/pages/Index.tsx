@@ -44,6 +44,34 @@ const Index = () => {
     setMembers(prevMembers => [...prevMembers, ...newMembers]);
   };
 
+  const handleReplaceAll = (importedMembers: Partial<Member>[]) => {
+    const newMembers: Member[] = importedMembers.map((member, index) => ({
+      id: `imported-${Date.now()}-${index}`,
+      nome: member.nome || '',
+      dataNascimento: member.dataNascimento || '',
+      sexo: member.sexo || 'M',
+      telefone: member.telefone || '',
+      email: member.email || '',
+      endereco: member.endereco || '',
+      bairro: member.bairro || '',
+      cidade: member.cidade || '',
+      cep: member.cep || '',
+      status: member.status || 'ativo',
+      dataBatismo: member.dataBatismo,
+      dataMembresia: member.dataMembresia,
+      dataDesligamento: member.dataDesligamento,
+      observacoes: member.observacoes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }));
+
+    setMembers(newMembers);
+    toast({
+      title: "Base de dados substituída",
+      description: "Todos os dados anteriores foram substituídos pelos dados do arquivo."
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
@@ -59,7 +87,7 @@ const Index = () => {
         <StatsCards members={filteredMembers} />
 
         {/* Import/Export */}
-        <ImportExport members={members} onImport={handleImport} />
+        <ImportExport members={members} onImport={handleImport} onReplaceAll={handleReplaceAll} />
 
         {/* Filters */}
         <MemberFiltersComponent 
