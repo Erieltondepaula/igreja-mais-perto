@@ -16,7 +16,8 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
   const uniqueBairros = Array.from(new Set(members.map(m => m.bairro))).sort();
   
   const handleFilterChange = (key: keyof MemberFiltersType, value: any) => {
-    onFiltersChange({ ...filters, [key]: value });
+    const newValue = value === 'all' ? undefined : value;
+    onFiltersChange({ ...filters, [key]: newValue });
   };
 
   const clearFilters = () => {
@@ -35,12 +36,12 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label>Status</Label>
-            <Select value={filters.status || ''} onValueChange={(value) => handleFilterChange('status', value || undefined)}>
+            <Select value={filters.status || 'all'} onValueChange={(value) => handleFilterChange('status', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
+                <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="ativo">Ativo</SelectItem>
                 <SelectItem value="batizado">Batizado</SelectItem>
                 <SelectItem value="membro">Membro</SelectItem>
@@ -51,12 +52,12 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
 
           <div className="space-y-2">
             <Label>Sexo</Label>
-            <Select value={filters.sexo || ''} onValueChange={(value) => handleFilterChange('sexo', value || undefined)}>
+            <Select value={filters.sexo || 'all'} onValueChange={(value) => handleFilterChange('sexo', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="M">Masculino</SelectItem>
                 <SelectItem value="F">Feminino</SelectItem>
               </SelectContent>
@@ -65,12 +66,12 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
 
           <div className="space-y-2">
             <Label>Bairro</Label>
-            <Select value={filters.bairro || ''} onValueChange={(value) => handleFilterChange('bairro', value || undefined)}>
+            <Select value={filters.bairro || 'all'} onValueChange={(value) => handleFilterChange('bairro', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Todos os bairros" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os bairros</SelectItem>
+                <SelectItem value="all">Todos os bairros</SelectItem>
                 {uniqueBairros.map(bairro => (
                   <SelectItem key={bairro} value={bairro}>{bairro}</SelectItem>
                 ))}
