@@ -2,10 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Member, MemberFilters } from '@/types/member';
 import { calculateAge, formatStatus, getStatusColor, isBirthdayInMonth, isBirthdayToday } from '@/utils/memberUtils';
 import { exportToExcel } from '@/utils/excelUtils';
-import { Download, FileText, Users, Gift, Calendar } from 'lucide-react';
+import { MemberDetails } from './MemberDetails';
+import { Download, FileText, Users, Gift, Calendar, Eye } from 'lucide-react';
 
 interface MemberListProps {
   members: Member[];
@@ -163,9 +165,11 @@ export const MemberList = ({ members, filters, title }: MemberListProps) => {
                     <TableHead>Sexo</TableHead>
                     <TableHead>Telefone</TableHead>
                     <TableHead>Bairro</TableHead>
+                    <TableHead>Funções</TableHead>
                   </>
                 )}
                 <TableHead>Status</TableHead>
+                <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -201,6 +205,25 @@ export const MemberList = ({ members, filters, title }: MemberListProps) => {
                       <TableCell>{member.sexo === 'M' ? 'Masculino' : 'Feminino'}</TableCell>
                       <TableCell>{member.telefone}</TableCell>
                       <TableCell>{member.bairro}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {member.lider && (
+                            <Badge variant="secondary" className="text-xs">
+                              Líder
+                            </Badge>
+                          )}
+                          {member.professorEBQ && (
+                            <Badge variant="secondary" className="text-xs">
+                              Professor
+                            </Badge>
+                          )}
+                          {member.batizado && (
+                            <Badge variant="outline" className="text-xs">
+                              Batizado
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                     </>
                   )}
                   <TableCell>
@@ -210,6 +233,21 @@ export const MemberList = ({ members, filters, title }: MemberListProps) => {
                     >
                       {formatStatus(member.status)}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Detalhes do Membro</DialogTitle>
+                        </DialogHeader>
+                        <MemberDetails member={member} />
+                      </DialogContent>
+                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))}
