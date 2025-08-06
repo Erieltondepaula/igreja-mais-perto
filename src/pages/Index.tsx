@@ -35,6 +35,19 @@ const Index = () => {
     }
   };
 
+  const handleCardClick = (status?: string) => {
+    const newFilters = status ? { status } : {};
+    setFilters(newFilters);
+    
+    // Rolar para a lista após filtrar
+    setTimeout(() => {
+      memberListRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }, 100);
+  };
+
   const handleImport = (importedMembers: Partial<Member>[]) => {
     const newMembers: Member[] = importedMembers.map((member, index) => ({
       id: `imported-${Date.now()}-${index}`,
@@ -99,7 +112,7 @@ const Index = () => {
         </div>
 
         {/* Stats Cards */}
-        <StatsCards members={filteredMembers} />
+        <StatsCards members={members} onCardClick={handleCardClick} />
 
         {/* Import/Export */}
         <ImportExport members={members} onImport={handleImport} onReplaceAll={handleReplaceAll} />

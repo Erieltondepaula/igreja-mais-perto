@@ -4,11 +4,12 @@ import { Member } from '@/types/member';
 
 interface StatsCardsProps {
   members: Member[];
+  onCardClick?: (status?: string) => void;
 }
 
-export const StatsCards = ({ members }: StatsCardsProps) => {
+export const StatsCards = ({ members, onCardClick }: StatsCardsProps) => {
   const stats = {
-    total: members.length,
+    total: members.filter(m => m.status !== 'desligado').length,
     ativos: members.filter(m => m.status === 'ativo').length,
     batizados: members.filter(m => m.status === 'batizado').length,
     membros: members.filter(m => m.status === 'membro').length,
@@ -20,31 +21,36 @@ export const StatsCards = ({ members }: StatsCardsProps) => {
       title: 'Total de Membros',
       value: stats.total,
       icon: Users,
-      color: 'text-primary'
+      color: 'text-primary',
+      status: undefined
     },
     {
       title: 'Ativos',
       value: stats.ativos,
       icon: UserCheck,
-      color: 'text-success'
+      color: 'text-success',
+      status: 'ativo'
     },
     {
       title: 'Batizados',
       value: stats.batizados,
       icon: Heart,
-      color: 'text-info'
+      color: 'text-info',
+      status: 'batizado'
     },
     {
       title: 'Membros',
       value: stats.membros,
       icon: Users,
-      color: 'text-primary'
+      color: 'text-primary',
+      status: 'membro'
     },
     {
       title: 'Desligados',
       value: stats.desligados,
       icon: UserX,
-      color: 'text-muted-foreground'
+      color: 'text-muted-foreground',
+      status: 'desligado'
     }
   ];
 
@@ -53,7 +59,11 @@ export const StatsCards = ({ members }: StatsCardsProps) => {
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
-          <Card key={index} className="hover:shadow-md transition-shadow">
+          <Card 
+            key={index} 
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => onCardClick?.(card.status)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {card.title}

@@ -169,7 +169,7 @@ export const MemberList = ({ members, filters, title }: MemberListProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {members.map((member) => (
+              {members.sort((a, b) => a.nome.localeCompare(b.nome)).map((member) => (
                 <TableRow key={member.id} className={isAniversariantes && isBirthdayToday(member.dataNascimento) ? 'bg-accent/20' : ''}>
                   <TableCell className="font-medium">
                     {member.nome}
