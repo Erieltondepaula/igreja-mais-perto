@@ -6,9 +6,10 @@ import { MapPin } from 'lucide-react';
 
 interface NeighborhoodMapProps {
   members: Member[];
+  onNeighborhoodClick?: (bairro: string) => void;
 }
 
-export const NeighborhoodMap = ({ members }: NeighborhoodMapProps) => {
+export const NeighborhoodMap = ({ members, onNeighborhoodClick }: NeighborhoodMapProps) => {
   const neighborhoodData = getNeighborhoodData(members);
   const maxCount = Math.max(...neighborhoodData.map(n => n.quantidade));
 
@@ -34,11 +35,12 @@ export const NeighborhoodMap = ({ members }: NeighborhoodMapProps) => {
             {neighborhoodData.map((neighborhood, index) => (
               <div
                 key={index}
-                className={`p-4 rounded-lg border transition-all hover:shadow-md ${getIntensityColor(neighborhood.quantidade)} ${
+                className={`p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer ${getIntensityColor(neighborhood.quantidade)} ${
                   getIntensityColor(neighborhood.quantidade) === 'bg-muted' 
                     ? 'text-muted-foreground' 
                     : 'text-white'
                 }`}
+                onClick={() => onNeighborhoodClick?.(neighborhood.bairro)}
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium truncate">{neighborhood.bairro}</h3>

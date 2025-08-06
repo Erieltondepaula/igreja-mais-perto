@@ -48,6 +48,33 @@ const Index = () => {
     }, 100);
   };
 
+  const handleGenderClick = (sexo: string) => {
+    setFilters({ sexo });
+    if (memberListRef.current) {
+      setTimeout(() => {
+        memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
+
+  const handleAgeGroupClick = (faixaEtaria: string) => {
+    setFilters({ faixaEtaria });
+    if (memberListRef.current) {
+      setTimeout(() => {
+        memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
+
+  const handleNeighborhoodClick = (bairro: string) => {
+    setFilters({ bairro });
+    if (memberListRef.current) {
+      setTimeout(() => {
+        memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
+
   const handleImport = (importedMembers: Partial<Member>[]) => {
     const newMembers: Member[] = importedMembers.map((member, index) => ({
       id: `imported-${Date.now()}-${index}`,
@@ -126,12 +153,12 @@ const Index = () => {
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <GenderChart members={filteredMembers} />
-          <AgeChart members={filteredMembers} />
+          <GenderChart members={members} onSegmentClick={handleGenderClick} />
+          <AgeChart members={members} onBarClick={handleAgeGroupClick} />
         </div>
 
         {/* Neighborhood Map */}
-        <NeighborhoodMap members={filteredMembers} />
+        <NeighborhoodMap members={members} onNeighborhoodClick={handleNeighborhoodClick} />
 
         {/* Member List */}
         <div ref={memberListRef}>

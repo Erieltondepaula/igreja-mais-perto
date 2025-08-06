@@ -6,10 +6,18 @@ import { Users } from 'lucide-react';
 
 interface GenderChartProps {
   members: Member[];
+  onSegmentClick?: (sexo: string) => void;
 }
 
-export const GenderChart = ({ members }: GenderChartProps) => {
+export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
   const data = getGenderChartData(members);
+
+  const handleClick = (data: any) => {
+    if (onSegmentClick) {
+      const sexo = data.name === 'Masculino' ? 'M' : 'F';
+      onSegmentClick(sexo);
+    }
+  };
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -47,9 +55,15 @@ export const GenderChart = ({ members }: GenderChartProps) => {
                 outerRadius={100}
                 paddingAngle={5}
                 dataKey="value"
+                onClick={handleClick}
+                className="cursor-pointer"
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={entry.fill}
+                    className="hover:opacity-80 transition-opacity cursor-pointer"
+                  />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
@@ -59,7 +73,11 @@ export const GenderChart = ({ members }: GenderChartProps) => {
         </div>
         <div className="grid grid-cols-2 gap-4 mt-4">
           {data.map((item, index) => (
-            <div key={index} className="text-center">
+            <div 
+              key={index} 
+              className="text-center cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
+              onClick={() => handleClick(item)}
+            >
               <div className="text-2xl font-bold" style={{ color: item.fill }}>
                 {item.value}
               </div>

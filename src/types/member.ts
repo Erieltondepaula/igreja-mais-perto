@@ -39,6 +39,7 @@ export interface MemberFilters {
   status?: string;
   sexo?: string;
   bairro?: string;
+  faixaEtaria?: string;
   aniversariantesDoMes?: boolean;
   aniversariantesDoDia?: boolean;
 }

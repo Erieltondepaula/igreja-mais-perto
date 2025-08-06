@@ -6,10 +6,17 @@ import { TrendingUp } from 'lucide-react';
 
 interface AgeChartProps {
   members: Member[];
+  onBarClick?: (faixaEtaria: string) => void;
 }
 
-export const AgeChart = ({ members }: AgeChartProps) => {
+export const AgeChart = ({ members, onBarClick }: AgeChartProps) => {
   const data = getAgeGroupChartData(members);
+
+  const handleClick = (data: any) => {
+    if (onBarClick) {
+      onBarClick(data.faixaEtaria);
+    }
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -50,13 +57,19 @@ export const AgeChart = ({ members }: AgeChartProps) => {
                 dataKey="quantidade" 
                 fill="hsl(var(--primary))"
                 radius={[4, 4, 0, 0]}
+                onClick={handleClick}
+                className="cursor-pointer hover:opacity-80 transition-opacity"
               />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="grid grid-cols-5 gap-2 mt-4">
+        <div className="grid grid-cols-6 gap-2 mt-4">
           {data.map((item, index) => (
-            <div key={index} className="text-center">
+            <div 
+              key={index} 
+              className="text-center cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
+              onClick={() => handleClick(item)}
+            >
               <div className="text-lg font-bold text-primary">
                 {item.quantidade}
               </div>

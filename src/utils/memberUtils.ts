@@ -27,9 +27,25 @@ export const isBirthdayToday = (birthDate: string): boolean => {
 
 export const filterMembers = (members: Member[], filters: MemberFilters): Member[] => {
   return members.filter(member => {
-    if (filters.status && member.status !== filters.status) return false;
+    // Filtro de status - se for "ativo", inclui ativos, batizados e membros
+    // se for "desligado", mostra apenas desligados
+    if (filters.status) {
+      if (filters.status === 'ativo') {
+        if (member.status === 'desligado') return false;
+      } else if (filters.status === 'desligado') {
+        if (member.status !== 'desligado') return false;
+      } else {
+        if (member.status !== filters.status) return false;
+      }
+    }
+    
     if (filters.sexo && member.sexo !== filters.sexo) return false;
     if (filters.bairro && member.bairro !== filters.bairro) return false;
+    if (filters.faixaEtaria) {
+      const [minAge, maxAge] = getAgeRangeFromGroup(filters.faixaEtaria);
+      const age = calculateAge(member.dataNascimento);
+      if (age < minAge || age > maxAge) return false;
+    }
     if (filters.aniversariantesDoMes && !isBirthdayInMonth(member.dataNascimento)) return false;
     if (filters.aniversariantesDoDia && !isBirthdayToday(member.dataNascimento)) return false;
     
@@ -49,7 +65,8 @@ export const getGenderChartData = (members: Member[]): ChartData[] => {
 
 export const getAgeGroupChartData = (members: Member[]): AgeGroupData[] => {
   const ageGroups = {
-    '0-17': 0,
+    '0-12': 0,
+    '13-17': 0,
     '18-30': 0,
     '31-45': 0,
     '46-60': 0,
@@ -58,7 +75,8 @@ export const getAgeGroupChartData = (members: Member[]): AgeGroupData[] => {
   
   members.forEach(member => {
     const age = calculateAge(member.dataNascimento);
-    if (age <= 17) ageGroups['0-17']++;
+    if (age <= 12) ageGroups['0-12']++;
+    else if (age <= 17) ageGroups['13-17']++;
     else if (age <= 30) ageGroups['18-30']++;
     else if (age <= 45) ageGroups['31-45']++;
     else if (age <= 60) ageGroups['46-60']++;
@@ -68,8 +86,20 @@ export const getAgeGroupChartData = (members: Member[]): AgeGroupData[] => {
   return Object.entries(ageGroups).map(([faixaEtaria, quantidade], index) => ({
     faixaEtaria,
     quantidade,
-    fill: `hsl(var(--chart-${(index % 5) + 1}))`
+    fill: `hsl(var(--chart-${(index % 6) + 1}))`
   }));
+};
+
+export const getAgeRangeFromGroup = (ageGroup: string): [number, number] => {
+  switch (ageGroup) {
+    case '0-12': return [0, 12];
+    case '13-17': return [13, 17];
+    case '18-30': return [18, 30];
+    case '31-45': return [31, 45];
+    case '46-60': return [46, 60];
+    case '61+': return [61, 150];
+    default: return [0, 150];
+  }
 };
 
 export const getNeighborhoodData = (members: Member[]): NeighborhoodData[] => {
