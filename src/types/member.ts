@@ -36,12 +36,15 @@ export interface Member {
 }
 
 export interface MemberFilters {
-  status?: string;
+  statusGeral?: 'ativo' | 'desligado';
+  tipoMembro?: string[];
   sexo?: string;
   bairro?: string;
   faixaEtaria?: string;
+  anoNascimento?: string;
   aniversariantesDoMes?: boolean;
   aniversariantesDoDia?: boolean;
+  search?: string;
 }
 
 export interface ChartData {

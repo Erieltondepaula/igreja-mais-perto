@@ -1,9 +1,10 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Member, MemberFilters } from '@/types/member';
 import { mockMembers } from '@/data/mockMembers';
 import { filterMembers } from '@/utils/memberUtils';
 import { StatsCards } from '@/components/dashboard/StatsCards';
 import { SummaryCards } from '@/components/dashboard/SummaryCards';
+import { QuickStats } from '@/components/dashboard/QuickStats';
 import { MemberFilters as MemberFiltersComponent } from '@/components/dashboard/MemberFilters';
 import { MemberList } from '@/components/dashboard/MemberList';
 import { GenderChart } from '@/components/dashboard/GenderChart';
@@ -11,12 +12,20 @@ import { AgeChart } from '@/components/dashboard/AgeChart';
 import { NeighborhoodMap } from '@/components/dashboard/NeighborhoodMap';
 import { ImportExport } from '@/components/dashboard/ImportExport';
 import { useToast } from '@/hooks/use-toast';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const Index = () => {
-  const [members, setMembers] = useState<Member[]>(mockMembers);
+  const [members, setMembers] = useLocalStorage<Member[]>('church-members', mockMembers);
   const [filters, setFilters] = useState<MemberFilters>({});
   const memberListRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Initialize with mock data if localStorage is empty
+  useEffect(() => {
+    if (members.length === 0) {
+      setMembers(mockMembers);
+    }
+  }, []);
 
   const filteredMembers = useMemo(() => {
     return filterMembers(members, filters);
@@ -36,8 +45,8 @@ const Index = () => {
     }
   };
 
-  const handleCardClick = (status?: string) => {
-    const newFilters = status ? { status } : {};
+  const handleCardClick = (statusGeral?: string) => {
+    const newFilters = statusGeral ? { statusGeral: statusGeral as 'ativo' | 'desligado' } : {};
     setFilters(newFilters);
     
     // Rolar para a lista após filtrar
@@ -149,6 +158,9 @@ const Index = () => {
 
         {/* Stats Cards */}
         <StatsCards members={members} onCardClick={handleCardClick} />
+
+        {/* Quick Stats */}
+        <QuickStats members={members} />
 
         {/* Summary Cards */}
         <SummaryCards members={members} />

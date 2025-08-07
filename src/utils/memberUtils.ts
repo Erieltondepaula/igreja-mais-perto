@@ -27,28 +27,60 @@ export const isBirthdayToday = (birthDate: string): boolean => {
 
 export const filterMembers = (members: Member[], filters: MemberFilters): Member[] => {
   return members.filter(member => {
-    // Filtro de status - se for "ativo", inclui ativos, batizados e membros
-    // se for "desligado", mostra apenas desligados
-    if (filters.status) {
-      if (filters.status === 'ativo') {
-        if (member.status === 'desligado') return false;
-      } else if (filters.status === 'desligado') {
-        if (member.status !== 'desligado') return false;
-      } else {
-        if (member.status !== filters.status) return false;
-      }
+    // Search filter
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      const memberName = member.nome?.toLowerCase() || '';
+      const memberFullName = member.nomeCompleto?.toLowerCase() || '';
+      if (!memberName.includes(searchTerm) && !memberFullName.includes(searchTerm)) return false;
     }
-    
+
+    // Status Geral filter (mutually exclusive)
+    if (filters.statusGeral) {
+      if (filters.statusGeral === 'ativo' && member.status === 'desligado') return false;
+      if (filters.statusGeral === 'desligado' && member.status !== 'desligado') return false;
+    }
+
+    // Tipo de Membro filter (multiple choice)
+    if (filters.tipoMembro && filters.tipoMembro.length > 0) {
+      const hasAnyType = filters.tipoMembro.some(tipo => {
+        switch (tipo) {
+          case 'batizado':
+            return member.batizado === true;
+          case 'membro':
+            return member.membro === true;
+          case 'congregado':
+            return !member.batizado && !member.membro;
+          default:
+            return false;
+        }
+      });
+      if (!hasAnyType) return false;
+    }
+
+    // Gender filter
     if (filters.sexo && member.sexo !== filters.sexo) return false;
+
+    // Neighborhood filter
     if (filters.bairro && member.bairro !== filters.bairro) return false;
+
+    // Age group filter
     if (filters.faixaEtaria) {
+      const memberAge = calculateAge(member.dataNascimento);
       const [minAge, maxAge] = getAgeRangeFromGroup(filters.faixaEtaria);
-      const age = calculateAge(member.dataNascimento);
-      if (age < minAge || age > maxAge) return false;
+      if (memberAge < minAge || memberAge > maxAge) return false;
     }
+
+    // Birth year filter
+    if (filters.anoNascimento) {
+      const birthYear = new Date(member.dataNascimento).getFullYear().toString();
+      if (birthYear !== filters.anoNascimento) return false;
+    }
+
+    // Birthday filters
     if (filters.aniversariantesDoMes && !isBirthdayInMonth(member.dataNascimento)) return false;
     if (filters.aniversariantesDoDia && !isBirthdayToday(member.dataNascimento)) return false;
-    
+
     return true;
   });
 };
