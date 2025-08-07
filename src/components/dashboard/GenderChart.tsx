@@ -10,7 +10,10 @@ interface GenderChartProps {
 }
 
 export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
-  const data = getGenderChartData(members);
+  const data = getGenderChartData(members).map(item => ({
+    ...item,
+    fill: item.name === 'Masculino' ? '#3B82F6' : '#EC4899' // Azul para masculino, rosa para feminino
+  }));
 
   const handleClick = (data: any) => {
     if (onSegmentClick) {

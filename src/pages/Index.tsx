@@ -3,6 +3,7 @@ import { Member, MemberFilters } from '@/types/member';
 import { mockMembers } from '@/data/mockMembers';
 import { filterMembers } from '@/utils/memberUtils';
 import { StatsCards } from '@/components/dashboard/StatsCards';
+import { SummaryCards } from '@/components/dashboard/SummaryCards';
 import { MemberFilters as MemberFiltersComponent } from '@/components/dashboard/MemberFilters';
 import { MemberList } from '@/components/dashboard/MemberList';
 import { GenderChart } from '@/components/dashboard/GenderChart';
@@ -99,6 +100,14 @@ const Index = () => {
     setMembers(prevMembers => [...prevMembers, ...newMembers]);
   };
 
+  const handleMemberUpdate = (updatedMember: Member) => {
+    setMembers(prevMembers => 
+      prevMembers.map(member => 
+        member.id === updatedMember.id ? updatedMember : member
+      )
+    );
+  };
+
   const handleReplaceAll = (importedMembers: Partial<Member>[]) => {
     const newMembers: Member[] = importedMembers.map((member, index) => ({
       id: `imported-${Date.now()}-${index}`,
@@ -141,6 +150,9 @@ const Index = () => {
         {/* Stats Cards */}
         <StatsCards members={members} onCardClick={handleCardClick} />
 
+        {/* Summary Cards */}
+        <SummaryCards members={members} />
+
         {/* Import/Export */}
         <ImportExport members={members} onImport={handleImport} onReplaceAll={handleReplaceAll} />
 
@@ -162,7 +174,11 @@ const Index = () => {
 
         {/* Member List */}
         <div ref={memberListRef}>
-          <MemberList members={filteredMembers} filters={filters} />
+          <MemberList 
+            members={filteredMembers} 
+            filters={filters} 
+            onMemberUpdate={handleMemberUpdate}
+          />
         </div>
       </div>
     </div>
