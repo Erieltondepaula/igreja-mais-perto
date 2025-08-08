@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Member, MemberFilters } from '@/types/member';
 import { mockMembers } from '@/data/mockMembers';
 import { filterMembers } from '@/utils/memberUtils';
+import { Header } from '@/components/dashboard/Header';
 import { StatsCards } from '@/components/dashboard/StatsCards';
 import { SummaryCards } from '@/components/dashboard/SummaryCards';
 import { QuickStats } from '@/components/dashboard/QuickStats';
@@ -148,9 +149,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-foreground">Dashboard de Membros</h1>
+        {/* Header with Logo */}
+        <Header />
+        
+        {/* Subtitle */}
+        <div className="text-center">
           <p className="text-xl text-muted-foreground">
             Sistema de gestão e controle de cadastro de membros
           </p>

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface MemberEditProps {
@@ -38,12 +39,45 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto rounded-xl shadow-md">
         <DialogHeader>
           <DialogTitle>Editar Membro</DialogTitle>
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <Label htmlFor="photo">Foto do Membro</Label>
+            <div className="flex items-center gap-4">
+              {editedMember.photoUrl ? (
+                <img
+                  src={editedMember.photoUrl}
+                  alt="Foto do Membro"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-muted border-2 border-border flex items-center justify-center">
+                  <User className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
+              <Input
+                id="photo"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const result = event.target?.result as string;
+                      updateField('photoUrl', result);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="nome">Nome</Label>
             <Input
@@ -201,10 +235,10 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} className="rounded-xl">
             Cancelar
           </Button>
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90">
             Salvar
           </Button>
         </DialogFooter>

@@ -2,6 +2,7 @@ export interface Member {
   id: string;
   nome: string;
   nomeCompleto?: string;
+  photoUrl?: string;
   dataNascimento: string;
   idade?: number;
   mes?: string;

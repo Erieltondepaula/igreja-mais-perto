@@ -105,10 +105,10 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
 
 
   return (
-    <Card>
+    <Card className="rounded-xl shadow-md">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
             <Users className="h-5 w-5" />
             Lista de Membros ({members.length})
             {selectedMembers.length > 0 && (
@@ -119,12 +119,12 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
           </CardTitle>
           <div className="flex gap-2">
             {selectedMembers.length > 0 && (
-              <Button onClick={() => exportToExcel(true)} variant="outline" size="sm">
+              <Button onClick={() => exportToExcel(true)} variant="outline" size="sm" className="rounded-xl">
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Selecionados ({selectedMembers.length})
               </Button>
             )}
-            <Button onClick={() => exportToExcel(false)} variant="outline" size="sm">
+            <Button onClick={() => exportToExcel(false)} variant="outline" size="sm" className="rounded-xl">
               <Download className="h-4 w-4 mr-2" />
               Exportar Todos
             </Button>
@@ -209,6 +209,7 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
                         setSelectedMember(member);
                         setIsDetailsOpen(true);
                       }}
+                      className="rounded-xl hover:bg-muted"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -219,6 +220,7 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
                         setEditingMember(member);
                         setIsEditOpen(true);
                       }}
+                      className="rounded-xl hover:bg-muted"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -230,11 +232,11 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
         </Table>
 
         <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl rounded-xl shadow-md">
             <DialogHeader>
               <DialogTitle>Detalhes do Membro</DialogTitle>
             </DialogHeader>
-            {selectedMember && <MemberDetails member={selectedMember} />}
+            {selectedMember && <MemberDetails member={selectedMember} onMemberUpdate={onMemberUpdate} />}
           </DialogContent>
         </Dialog>
 
