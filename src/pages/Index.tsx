@@ -184,9 +184,6 @@ const Index = () => {
           <AgeChart members={members} onBarClick={handleAgeGroupClick} />
         </div>
 
-        {/* Neighborhood Map */}
-        <NeighborhoodMap members={members} onNeighborhoodClick={handleNeighborhoodClick} />
-
         {/* Member List */}
         <div ref={memberListRef}>
           <MemberList 
@@ -195,6 +192,9 @@ const Index = () => {
             onMemberUpdate={handleMemberUpdate}
           />
         </div>
+
+        {/* Neighborhood Map */}
+        <NeighborhoodMap members={members} onNeighborhoodClick={handleNeighborhoodClick} />
       </div>
     </div>
   );

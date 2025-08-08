@@ -5,11 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, Edit, Download, Users, Trash2 } from 'lucide-react';
+import { Eye, Edit, Download, Users, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MemberDetails } from './MemberDetails';
 import { MemberEdit } from './MemberEdit';
-import { getStatusColor } from '@/utils/memberUtils';
+import { calculateAge } from '@/utils/memberUtils';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
@@ -25,10 +25,77 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedMembers = () => {
+    if (!sortField) return members;
+
+    return [...members].sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortField) {
+        case 'nome':
+          aValue = a.nome.toLowerCase();
+          bValue = b.nome.toLowerCase();
+          break;
+        case 'idade':
+          aValue = calculateAge(a.dataNascimento);
+          bValue = calculateAge(b.dataNascimento);
+          break;
+        case 'sexo':
+          aValue = a.sexo === 'M' ? 'Masculino' : 'Feminino';
+          bValue = b.sexo === 'M' ? 'Masculino' : 'Feminino';
+          break;
+        case 'telefone':
+          aValue = a.telefone;
+          bValue = b.telefone;
+          break;
+        case 'bairro':
+          aValue = a.bairro;
+          bValue = b.bairro;
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'tipo':
+          aValue = getTipoMembroText(a);
+          bValue = getTipoMembroText(b);
+          break;
+        case 'dataNascimento':
+          aValue = new Date(a.dataNascimento);
+          bValue = new Date(b.dataNascimento);
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const sortedMembers = getSortedMembers();
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
+    return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+  };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedMembers(members.map(m => m.id));
+      setSelectedMembers(sortedMembers.map(m => m.id));
     } else {
       setSelectedMembers([]);
     }
@@ -44,14 +111,14 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
 
   const exportToExcel = (exportSelected = false) => {
     const membersToExport = exportSelected 
-      ? members.filter(m => selectedMembers.includes(m.id))
-      : members;
+      ? sortedMembers.filter(m => selectedMembers.includes(m.id))
+      : sortedMembers;
 
     const exportData = membersToExport.map(member => ({
       Nome: member.nome,
       'Nome Completo': member.nomeCompleto || '',
       'Data de Nascimento': member.dataNascimento,
-      Idade: member.idade || '',
+      Idade: calculateAge(member.dataNascimento),
       Sexo: member.sexo === 'M' ? 'Masculino' : 'Feminino',
       Telefone: member.telefone,
       Email: member.email,
@@ -80,29 +147,17 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
     saveAs(data, filename);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'ativo': return '🟢';
-      case 'desligado': return '⚪';
-      case 'batizado': return '🔵';
-      case 'membro': return '🔷';
-      default: return '🟡';
-    }
-  };
-
-  const getTipoMembroIcon = (member: Member) => {
-    if (member.batizado) return '🔵';
-    if (member.membro) return '🔷';
-    return '🟡'; // Congregado
-  };
-
   const getTipoMembroText = (member: Member) => {
+    if (member.batizado && member.membro) return 'Membro';
     if (member.batizado) return 'Batizado';
-    if (member.membro) return 'Membro';
     return 'Congregado';
   };
 
-
+  const getTipoMembroIcon = (member: Member) => {
+    if (member.batizado && member.membro) return '🔷';
+    if (member.batizado) return '🔵';
+    return '🟡';
+  };
 
   return (
     <Card className="rounded-xl shadow-md">
@@ -110,7 +165,7 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
             <Users className="h-5 w-5" />
-            Lista de Membros ({members.length})
+            Lista de Membros ({sortedMembers.length})
             {selectedMembers.length > 0 && (
               <span className="text-sm font-normal text-muted-foreground">
                 ({selectedMembers.length} selecionados)
@@ -132,29 +187,61 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
         </div>
       </CardHeader>
       <CardContent>
-
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">
                 <Checkbox
-                  checked={selectedMembers.length === members.length && members.length > 0}
+                  checked={selectedMembers.length === sortedMembers.length && sortedMembers.length > 0}
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>Idade</TableHead>
-              <TableHead>Sexo</TableHead>
-              <TableHead>Telefone</TableHead>
-              <TableHead>Bairro</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Tipo</TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('nome')}>
+                <div className="flex items-center gap-1">
+                  Nome {getSortIcon('nome')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('dataNascimento')}>
+                <div className="flex items-center gap-1">
+                  Data Nascimento {getSortIcon('dataNascimento')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('idade')}>
+                <div className="flex items-center gap-1">
+                  Idade {getSortIcon('idade')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('sexo')}>
+                <div className="flex items-center gap-1">
+                  Sexo {getSortIcon('sexo')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('telefone')}>
+                <div className="flex items-center gap-1">
+                  Telefone {getSortIcon('telefone')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('bairro')}>
+                <div className="flex items-center gap-1">
+                  Bairro {getSortIcon('bairro')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
+                <div className="flex items-center gap-1">
+                  Status {getSortIcon('status')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('tipo')}>
+                <div className="flex items-center gap-1">
+                  Tipo {getSortIcon('tipo')}
+                </div>
+              </TableHead>
               <TableHead>Funções</TableHead>
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {members.map((member) => (
+            {sortedMembers.map((member) => (
               <TableRow key={member.id}>
                 <TableCell>
                   <Checkbox
@@ -163,7 +250,8 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
                   />
                 </TableCell>
                 <TableCell className="font-medium">{member.nome}</TableCell>
-                <TableCell>{member.idade || 'N/A'}</TableCell>
+                <TableCell>{new Date(member.dataNascimento).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell>{calculateAge(member.dataNascimento)} anos</TableCell>
                 <TableCell>{member.sexo === 'M' ? 'Masculino' : 'Feminino'}</TableCell>
                 <TableCell>{member.telefone}</TableCell>
                 <TableCell>{member.bairro}</TableCell>
@@ -172,7 +260,7 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
                     variant={member.status === 'ativo' ? 'default' : 'destructive'}
                     className="text-white"
                   >
-                    {getStatusIcon(member.status)} {member.status}
+                    {member.status === 'ativo' ? '🟢 Ativo' : '⚪ Desligado'}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -180,7 +268,7 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
                     variant="secondary" 
                     className="text-white"
                     style={{ 
-                      backgroundColor: member.batizado ? '#3b82f6' : member.membro ? '#1e40af' : '#eab308'
+                      backgroundColor: member.batizado && member.membro ? '#1e40af' : member.batizado ? '#3b82f6' : '#eab308'
                     }}
                   >
                     {getTipoMembroIcon(member)} {getTipoMembroText(member)}

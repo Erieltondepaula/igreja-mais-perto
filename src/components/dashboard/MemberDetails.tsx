@@ -14,6 +14,7 @@ interface MemberDetailsProps {
 
 export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) => {
   const [uploading, setUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -30,6 +31,17 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
     };
     
     reader.readAsDataURL(file);
+  };
+
+  const handleSave = () => {
+    if (onMemberUpdate) {
+      onMemberUpdate({ ...member, updatedAt: new Date().toISOString() });
+      setIsEditing(false);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
   };
 
   return (
@@ -82,7 +94,7 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                {calculateAge(member.dataNascimento)} anos
+                {new Date(member.dataNascimento).toLocaleDateString('pt-BR')} - {calculateAge(member.dataNascimento)} anos
                 {member.faixaEtaria && (
                   <Badge variant="outline" className="ml-2">
                     {member.faixaEtaria}
@@ -150,19 +162,19 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                   style={{ color: getStatusColor(member.status) }}
                   className="rounded-xl"
                 >
-                  {formatStatus(member.status)}
+                  {member.status === 'ativo' ? '🟢 Ativo' : '⚪ Desligado'}
                 </Badge>
                 
                 {member.batizado && (
                   <Badge variant="secondary" className="bg-info/10 text-info rounded-xl">
-                    Batizado
+                    🔵 Batizado
                   </Badge>
                 )}
                 
                 {member.membro && (
                   <Badge variant="secondary" className="bg-primary/10 text-primary rounded-xl">
                     <Users className="h-3 w-3 mr-1" />
-                    Membro
+                    🔷 Membro
                   </Badge>
                 )}
                 
@@ -205,6 +217,21 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                   Observações
                 </h4>
                 <p className="text-sm text-muted-foreground">{member.observacoes}</p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            {onMemberUpdate && (
+              <div className="flex gap-2 pt-4 border-t">
+                {isEditing ? (
+                  <Button onClick={handleSave} className="rounded-xl">
+                    Salvar
+                  </Button>
+                ) : (
+                  <Button onClick={handleEdit} variant="outline" className="rounded-xl">
+                    Alterar
+                  </Button>
+                )}
               </div>
             )}
           </div>
