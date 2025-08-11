@@ -12,7 +12,7 @@ export const StatsCards = ({ members, onCardClick }: StatsCardsProps) => {
     total: members.length,
     ativos: members.filter(m => m.status === 'ativo').length,
     batizados: members.filter(m => m.batizado === true).length,
-    membros: members.filter(m => m.membro === true).length,
+    membros: members.length, // Total members count
     desligados: members.filter(m => m.status === 'desligado').length
   };
 

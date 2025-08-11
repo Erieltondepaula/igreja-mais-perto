@@ -1,13 +1,7 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { Member } from '@/types/member';
 import { calculateAge } from './memberUtils';
-
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
 
 export const exportToPDF = (
   members: Member[], 
@@ -53,7 +47,7 @@ export const exportToPDF = (
   ]);
   
   // Configurar tabela
-  doc.autoTable({
+  autoTable(doc, {
     head: [['Nome', 'Data Nascimento', 'Idade', 'Status', 'Tipo']],
     body: tableData,
     startY: yPosition + 15,

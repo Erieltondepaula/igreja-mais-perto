@@ -235,11 +235,16 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
             {onMemberUpdate && (
               <div className="flex gap-2 pt-4 border-t">
                 {isEditing ? (
-                  <Button onClick={handleSave} className="rounded-xl">
-                    Salvar
-                  </Button>
+                  <>
+                    <Button onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl">
+                      Salvar
+                    </Button>
+                    <Button onClick={() => setIsEditing(false)} variant="outline" className="rounded-xl">
+                      Cancelar
+                    </Button>
+                  </>
                 ) : (
-                  <Button onClick={handleEdit} variant="outline" className="rounded-xl">
+                  <Button onClick={handleEdit} className="bg-blue-600 text-white hover:bg-blue-700 rounded-xl">
                     Alterar
                   </Button>
                 )}
