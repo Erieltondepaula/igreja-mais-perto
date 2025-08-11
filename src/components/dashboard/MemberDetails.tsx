@@ -159,6 +159,7 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
               </h4>
               
               <div className="flex flex-wrap gap-2">
+                {/* Badge do status */}
                 <Badge 
                   variant="outline" 
                   style={{ color: getStatusColor(member.status) }}
@@ -166,32 +167,45 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                 >
                   {member.status === 'ativo' ? '🟢 Ativo' : '⚪ Desligado'}
                 </Badge>
-                
-                {member.batizado && (
-                  <Badge variant="secondary" className="bg-info/10 text-info rounded-xl">
-                    🔵 Batizado
-                  </Badge>
-                )}
-                
-                {member.membro && (
-                  <Badge variant="secondary" className="bg-primary/10 text-primary rounded-xl">
-                    <Users className="h-3 w-3 mr-1" />
-                    🔷 Membro
-                  </Badge>
-                )}
-                
-                {member.lider && (
-                  <Badge variant="secondary" className="bg-warning/10 text-warning-foreground rounded-xl">
-                    <Crown className="h-3 w-3 mr-1" />
-                    Líder
-                  </Badge>
-                )}
-                
-                {member.professorEBQ && (
-                  <Badge variant="secondary" className="bg-accent/10 text-accent-foreground rounded-xl">
-                    <GraduationCap className="h-3 w-3 mr-1" />
-                    Professor EBQ
-                  </Badge>
+
+                {/* Mostrar badges extras apenas se não estiver desligado */}
+                {member.status !== 'desligado' && (
+                  <>
+                    {/* Se for membro */}
+                    {member.membro ? (
+                      <>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary rounded-xl flex items-center">
+                          <Users className="h-3 w-3 mr-1" />
+                          🔷 Membro
+                        </Badge>
+                        {member.batizado && (
+                          <Badge variant="secondary" className="bg-info/10 text-info rounded-xl">
+                            🔵 Batizado
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      // Não é membro (congregado e não batizado)
+                      <Badge variant="secondary" className="bg-yellow-300/20 text-yellow-700 rounded-xl">
+                        🟡 Congregado / Não Batizado
+                      </Badge>
+                    )}
+
+                    {/* Funções específicas */}
+                    {member.lider && (
+                      <Badge variant="secondary" className="bg-warning/10 text-warning-foreground rounded-xl flex items-center">
+                        <Crown className="h-3 w-3 mr-1" />
+                        Líder
+                      </Badge>
+                    )}
+
+                    {member.professorEBQ && (
+                      <Badge variant="secondary" className="bg-accent/10 text-accent-foreground rounded-xl flex items-center">
+                        <GraduationCap className="h-3 w-3 mr-1" />
+                        Professor EBQ
+                      </Badge>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -222,7 +236,7 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
               </div>
             )}
 
-            {/* Action Buttons */}
+            {/* Botões de ação */}
             {onMemberUpdate && (
               <div className="flex gap-2 pt-4 border-t">
                 <Button onClick={handleEdit} className="bg-blue-600 text-white hover:bg-blue-700 rounded-xl">

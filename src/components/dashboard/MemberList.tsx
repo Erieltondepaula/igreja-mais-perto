@@ -5,11 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, Edit, Download, Users, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Eye, Download, Users, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MemberDetails } from './MemberDetails';
 import { MemberEdit } from './MemberEdit';
-import { calculateAge, formatStatus, getStatusColor, getMemberType } from '@/utils/memberUtils';
+import { calculateAge, getMemberType } from '@/utils/memberUtils';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
@@ -262,29 +262,39 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge 
-                    variant="secondary" 
-                    className="text-white"
-                    style={{ 
-                      backgroundColor: member.batizado && member.membro ? '#1e40af' : member.batizado ? '#3b82f6' : '#eab308'
-                    }}
-                  >
-                    {getTipoMembroIcon(member)} {getTipoMembroText(member)}
-                  </Badge>
+                  {member.status !== 'desligado' ? (
+                    <Badge 
+                      variant="secondary" 
+                      className="text-white"
+                      style={{ 
+                        backgroundColor: member.batizado && member.membro ? '#1e40af' : member.batizado ? '#3b82f6' : '#eab308'
+                      }}
+                    >
+                      {getTipoMembroIcon(member)} {getTipoMembroText(member)}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground text-xs">
+                      Desligado
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {member.lider && (
-                      <Badge variant="outline" className="text-xs">
-                        Líder
-                      </Badge>
-                    )}
-                    {member.professorEBQ && (
-                      <Badge variant="outline" className="text-xs">
-                        Prof. EBQ
-                      </Badge>
-                    )}
-                  </div>
+                  {member.status !== 'desligado' ? (
+                    <div className="flex flex-wrap gap-1">
+                      {member.lider && (
+                        <Badge variant="outline" className="text-xs">
+                          Líder
+                        </Badge>
+                      )}
+                      {member.professorEBQ && (
+                        <Badge variant="outline" className="text-xs">
+                          Prof. EBQ
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs italic">Nenhuma função</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -299,17 +309,7 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingMember(member);
-                        setIsEditOpen(true);
-                      }}
-                      className="rounded-xl hover:bg-muted"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    {/* Botão Edit removido */}
                   </div>
                 </TableCell>
               </TableRow>

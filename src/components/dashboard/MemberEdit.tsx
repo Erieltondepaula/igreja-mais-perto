@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Member } from '@/types/member';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,11 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
   const [editedMember, setEditedMember] = useState<Member | null>(member);
   const { toast } = useToast();
 
+  // Sincroniza editedMember se prop member mudar
+  useEffect(() => {
+    setEditedMember(member);
+  }, [member]);
+
   if (!member || !editedMember) return null;
 
   const handleSave = () => {
@@ -33,9 +38,23 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
     }
   };
 
-  const updateField = (field: keyof Member, value: any) => {
+  const updateField = (field: keyof Member, value: unknown) => {
     setEditedMember(prev => prev ? { ...prev, [field]: value } : null);
+
+    // Se alterar status para 'desligado', limpar vínculos automaticamente
+    if (field === 'status' && value === 'desligado') {
+      setEditedMember(prev => prev ? {
+        ...prev,
+        membro: false,
+        batizado: false,
+        lider: false,
+        professorEBQ: false,
+      } : null);
+    }
   };
+
+  // Verifica se o status é desligado para controlar visibilidade/estado dos campos
+  const isDesligado = editedMember.status === 'desligado';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -67,7 +86,7 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
                   const file = e.target.files?.[0];
                   if (file) {
                     const reader = new FileReader();
-                    reader.onload = (event) => {
+                    reader.onload = (event: ProgressEvent<FileReader>) => {
                       const result = event.target?.result as string;
                       updateField('photoUrl', result);
                     };
@@ -207,41 +226,54 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="batizado"
-              checked={editedMember.batizado || false}
-              onCheckedChange={(checked) => updateField('batizado', checked)}
-            />
-            <Label htmlFor="batizado">Batizado</Label>
-          </div>
+          {/* Aqui começa a alteração para ocultar/desabilitar os switches se status for desligado */}
+          {!isDesligado && (
+            <>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="membro"
+                  checked={editedMember.membro || false}
+                  onCheckedChange={(checked) => {
+                    updateField('membro', checked);
+                    if (!checked) {
+                      // Ao desmarcar membro, batizado deve ser falso automaticamente
+                      updateField('batizado', false);
+                    }
+                  }}
+                />
+                <Label htmlFor="membro">Membro</Label>
+              </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="membro"
-              checked={editedMember.membro || false}
-              onCheckedChange={(checked) => updateField('membro', checked)}
-            />
-            <Label htmlFor="membro">Membro</Label>
-          </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="batizado"
+                  checked={editedMember.batizado || false}
+                  onCheckedChange={(checked) => updateField('batizado', checked)}
+                  disabled={!editedMember.membro} // Desabilita se não for membro
+                />
+                <Label htmlFor="batizado">Batizado</Label>
+              </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="lider"
-              checked={editedMember.lider || false}
-              onCheckedChange={(checked) => updateField('lider', checked)}
-            />
-            <Label htmlFor="lider">Líder</Label>
-          </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="lider"
+                  checked={editedMember.lider || false}
+                  onCheckedChange={(checked) => updateField('lider', checked)}
+                />
+                <Label htmlFor="lider">Líder</Label>
+              </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="professorEBQ"
-              checked={editedMember.professorEBQ || false}
-              onCheckedChange={(checked) => updateField('professorEBQ', checked)}
-            />
-            <Label htmlFor="professorEBQ">Professor EBQ</Label>
-          </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="professorEBQ"
+                  checked={editedMember.professorEBQ || false}
+                  onCheckedChange={(checked) => updateField('professorEBQ', checked)}
+                />
+                <Label htmlFor="professorEBQ">Professor EBQ</Label>
+              </div>
+            </>
+          )}
+          {/* Fim da alteração */}
         </div>
 
         <DialogFooter>
