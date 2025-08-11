@@ -197,6 +197,16 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             />
           </div>
 
+          <div className="md:col-span-2">
+            <Label htmlFor="observacoes">Observações</Label>
+            <Input
+              id="observacoes"
+              value={editedMember.observacoes || ''}
+              onChange={(e) => updateField('observacoes', e.target.value)}
+              placeholder="Digite observações sobre o membro..."
+            />
+          </div>
+
           <div className="flex items-center space-x-2">
             <Switch
               id="batizado"

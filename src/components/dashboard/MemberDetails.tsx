@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar, MapPin, Phone, Mail, User, Heart, Award, Upload, Users, GraduationCap, Crown } from 'lucide-react';
 import { calculateAge, formatStatus, getStatusColor } from '@/utils/memberUtils';
+import { MemberEdit } from './MemberEdit';
 
 interface MemberDetailsProps {
   member: Member;
@@ -14,8 +15,7 @@ interface MemberDetailsProps {
 
 export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) => {
   const [uploading, setUploading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedMember, setEditedMember] = useState<Member>(member);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,32 +27,23 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
     
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      if (isEditing) {
-        setEditedMember(prev => ({
-          ...prev,
-          photoUrl: result
-        }));
-        setPhotoFile(file);
-      } else {
-        const updatedMember = { ...member, photoUrl: result, updatedAt: new Date().toISOString() };
-        onMemberUpdate(updatedMember);
-      }
+      const updatedMember = { ...member, photoUrl: result, updatedAt: new Date().toISOString() };
+      onMemberUpdate(updatedMember);
       setUploading(false);
     };
     
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
+  const handleEditComplete = (updatedMember: Member) => {
     if (onMemberUpdate) {
-      onMemberUpdate({ ...editedMember, updatedAt: new Date().toISOString() });
-      setIsEditing(false);
+      onMemberUpdate(updatedMember);
+      setIsEditModalOpen(false);
     }
   };
 
   const handleEdit = () => {
-    setEditedMember(member);
-    setIsEditing(true);
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -234,25 +225,22 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
             {/* Action Buttons */}
             {onMemberUpdate && (
               <div className="flex gap-2 pt-4 border-t">
-                {isEditing ? (
-                  <>
-                    <Button onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl">
-                      Salvar
-                    </Button>
-                    <Button onClick={() => setIsEditing(false)} variant="outline" className="rounded-xl">
-                      Cancelar
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={handleEdit} className="bg-blue-600 text-white hover:bg-blue-700 rounded-xl">
-                    Alterar
-                  </Button>
-                )}
+                <Button onClick={handleEdit} className="bg-blue-600 text-white hover:bg-blue-700 rounded-xl">
+                  Alterar
+                </Button>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de Edição */}
+      <MemberEdit
+        member={member}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={handleEditComplete}
+      />
     </div>
   );
 };
