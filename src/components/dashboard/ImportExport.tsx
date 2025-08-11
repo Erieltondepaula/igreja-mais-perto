@@ -7,16 +7,20 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Member } from '@/types/member';
 import { exportToExcel, importFromExcel } from '@/utils/excelUtils';
-import { Upload, Download, FileSpreadsheet, Database, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { exportToPDF } from '@/utils/pdfUtils';
+import { Upload, Download, FileSpreadsheet, Database, AlertCircle, CheckCircle2, X, FileText } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { MemberFilters } from '@/types/member';
 
 interface ImportExportProps {
   members: Member[];
+  filteredMembers?: Member[];
+  filters?: MemberFilters;
   onImport: (members: Partial<Member>[]) => void;
   onReplaceAll: (members: Partial<Member>[]) => void;
 }
 
-export const ImportExport = ({ members, onImport, onReplaceAll }: ImportExportProps) => {
+export const ImportExport = ({ members, filteredMembers, filters, onImport, onReplaceAll }: ImportExportProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -102,6 +106,15 @@ export const ImportExport = ({ members, onImport, onReplaceAll }: ImportExportPr
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleExportPDF = () => {
+    const membersToExport = filteredMembers || members;
+    exportToPDF(membersToExport, filters, 'relatorio-membros');
+    toast({
+      title: "Exportação PDF concluída",
+      description: "Relatório PDF baixado com sucesso!"
+    });
   };
 
   const downloadTemplate = () => {
@@ -243,10 +256,15 @@ export const ImportExport = ({ members, onImport, onReplaceAll }: ImportExportPr
         )}
 
         {/* Ações Rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button onClick={handleExportAll} variant="outline" className="w-full">
             <Download className="h-4 w-4 mr-2" />
-            Exportar Base Atual
+            Exportar Excel
+          </Button>
+
+          <Button onClick={handleExportPDF} variant="outline" className="w-full">
+            <FileText className="h-4 w-4 mr-2" />
+            Exportar PDF
           </Button>
 
           <Button variant="outline" onClick={downloadTemplate} className="w-full">

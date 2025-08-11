@@ -166,3 +166,15 @@ export const formatStatus = (status: string): string => {
     default: return status;
   }
 };
+
+export const getMemberType = (member: Member): string => {
+  if (member.batizado && member.membro) {
+    return 'Batizado/Membro';
+  } else if (member.batizado && !member.membro) {
+    return 'Congregado/Batizado';
+  } else if (!member.batizado && !member.membro) {
+    return 'Congregado/Não Batizado';
+  } else {
+    return 'Não Batizado/Membro';
+  }
+};

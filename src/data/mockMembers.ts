@@ -1,220 +1,91 @@
 import { Member } from '@/types/member';
 
-export const mockMembers: Member[] = [
-  {
-    id: '1',
-    nome: 'João Silva Santos',
-    dataNascimento: '1985-03-15',
-    sexo: 'M',
-    telefone: '(11) 98765-4321',
-    email: 'joao.santos@email.com',
-    endereco: 'Rua das Flores, 123',
-    bairro: 'Centro',
-    cidade: 'São Paulo',
-    cep: '01234-567',
-    status: 'ativo',
-    batizado: true,
-    membro: true,
-    dataBatismo: '2020-06-10',
-    dataMembresia: '2021-01-15',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '2',
-    nome: 'Maria Oliveira Costa',
-    dataNascimento: '1990-08-22',
-    sexo: 'F',
-    telefone: '(11) 97654-3210',
-    email: 'maria.costa@email.com',
-    endereco: 'Av. Paulista, 456',
-    bairro: 'Bela Vista',
-    cidade: 'São Paulo',
-    cep: '01310-100',
-    status: 'ativo',
-    batizado: true,
-    membro: false,
-    dataBatismo: '2023-12-25',
-    createdAt: '2024-01-02T00:00:00Z',
-    updatedAt: '2024-01-02T00:00:00Z'
-  },
-  {
-    id: '3',
-    nome: 'Pedro Almeida Junior',
-    dataNascimento: '1978-11-08',
-    sexo: 'M',
-    telefone: '(11) 96543-2109',
-    email: 'pedro.junior@email.com',
-    endereco: 'Rua Augusta, 789',
-    bairro: 'Consolação',
-    cidade: 'São Paulo',
-    cep: '01305-000',
-    status: 'ativo',
-    batizado: false,
-    membro: false,
-    createdAt: '2024-01-03T00:00:00Z',
-    updatedAt: '2024-01-03T00:00:00Z'
-  },
-  {
-    id: '4',
-    nome: 'Ana Paula Ferreira',
-    dataNascimento: '1992-12-03',
-    sexo: 'F',
-    telefone: '(11) 95432-1098',
-    email: 'ana.ferreira@email.com',
-    endereco: 'Rua dos Três Irmãos, 321',
-    bairro: 'Vila Madalena',
-    cidade: 'São Paulo',
-    cep: '05429-020',
-    status: 'ativo',
-    batizado: true,
-    membro: true,
-    dataBatismo: '2019-04-21',
-    dataMembresia: '2020-03-10',
-    createdAt: '2024-01-04T00:00:00Z',
-    updatedAt: '2024-01-04T00:00:00Z'
-  },
-  {
-    id: '5',
-    nome: 'Carlos Eduardo Lima',
-    dataNascimento: '1965-07-14',
-    sexo: 'M',
-    telefone: '(11) 94321-0987',
-    email: 'carlos.lima@email.com',
-    endereco: 'Rua da Liberdade, 654',
-    bairro: 'Liberdade',
-    cidade: 'São Paulo',
-    cep: '01503-001',
-    status: 'desligado',
-    dataDesligamento: '2023-08-15',
-    createdAt: '2024-01-05T00:00:00Z',
-    updatedAt: '2024-01-05T00:00:00Z'
-  },
-  {
-    id: '6',
-    nome: 'Fernanda Santos Rocha',
-    dataNascimento: '1988-01-30',
-    sexo: 'F',
-    telefone: '(11) 93210-9876',
-    email: 'fernanda.rocha@email.com',
-    endereco: 'Rua Oscar Freire, 987',
-    bairro: 'Jardins',
-    cidade: 'São Paulo',
-    cep: '01426-001',
-    status: 'ativo',
-    batizado: true,
-    membro: false,
-    dataBatismo: '2022-09-18',
-    createdAt: '2024-01-06T00:00:00Z',
-    updatedAt: '2024-01-06T00:00:00Z'
-  },
-  {
-    id: '7',
-    nome: 'Roberto Mendes Silva',
-    dataNascimento: '1995-05-25',
-    sexo: 'M',
-    telefone: '(11) 92109-8765',
-    email: 'roberto.silva@email.com',
-    endereco: 'Av. Ibirapuera, 147',
-    bairro: 'Ibirapuera',
-    cidade: 'São Paulo',
-    cep: '04029-200',
-    status: 'ativo',
-    batizado: false,
-    membro: false,
-    createdAt: '2024-01-07T00:00:00Z',
-    updatedAt: '2024-01-07T00:00:00Z'
-  },
-  {
-    id: '8',
-    nome: 'Juliana Costa Barbosa',
-    dataNascimento: '1982-09-12',
-    sexo: 'F',
-    telefone: '(11) 91098-7654',
-    email: 'juliana.barbosa@email.com',
-    endereco: 'Rua Frei Caneca, 258',
-    bairro: 'Centro',
-    cidade: 'São Paulo',
-    cep: '01307-002',
-    status: 'ativo',
-    batizado: true,
-    membro: true,
-    dataBatismo: '2018-11-04',
-    dataMembresia: '2019-05-20',
-    createdAt: '2024-01-08T00:00:00Z',
-    updatedAt: '2024-01-08T00:00:00Z'
-  },
-  {
-    id: '9',
-    nome: 'Marcos Antônio Pereira',
-    dataNascimento: '1970-04-18',
-    sexo: 'M',
-    telefone: '(11) 90987-6543',
-    email: 'marcos.pereira@email.com',
-    endereco: 'Rua 25 de Março, 852',
-    bairro: 'Sé',
-    cidade: 'São Paulo',
-    cep: '01021-000',
-    status: 'ativo',
-    batizado: true,
-    membro: true,
-    dataBatismo: '2016-12-31',
-    dataMembresia: '2017-06-11',
-    createdAt: '2024-01-09T00:00:00Z',
-    updatedAt: '2024-01-09T00:00:00Z'
-  },
-  {
-    id: '10',
-    nome: 'Luciana Gomes Martins',
-    dataNascimento: '1993-10-07',
-    sexo: 'F',
-    telefone: '(11) 89876-5432',
-    email: 'luciana.martins@email.com',
-    endereco: 'Av. Brasil, 963',
-    bairro: 'Jardim América',
-    cidade: 'São Paulo',
-    cep: '01431-000',
-    status: 'ativo',
-    batizado: true,
-    membro: false,
-    dataBatismo: '2023-05-14',
-    createdAt: '2024-01-10T00:00:00Z',
-    updatedAt: '2024-01-10T00:00:00Z'
-  },
-  {
-    id: '11',
-    nome: 'Gabriel Costa Ribeiro',
-    dataNascimento: '2000-12-25',
-    sexo: 'M',
-    telefone: '(11) 88765-4321',
-    email: 'gabriel.ribeiro@email.com',
-    endereco: 'Rua Teodoro Sampaio, 741',
-    bairro: 'Pinheiros',
-    cidade: 'São Paulo',
-    cep: '05405-000',
-    status: 'ativo',
-    batizado: false,
-    membro: false,
-    createdAt: '2024-01-11T00:00:00Z',
-    updatedAt: '2024-01-11T00:00:00Z'
-  },
-  {
-    id: '12',
-    nome: 'Beatriz Alves Souza',
-    dataNascimento: '1987-06-11',
-    sexo: 'F',
-    telefone: '(11) 87654-3210',
-    email: 'beatriz.souza@email.com',
-    endereco: 'Rua Haddock Lobo, 159',
-    bairro: 'Cerqueira César',
-    cidade: 'São Paulo',
-    cep: '01414-001',
-    status: 'ativo',
-    batizado: true,
-    membro: true,
-    dataBatismo: '2021-08-07',
-    dataMembresia: '2022-02-14',
-    createdAt: '2024-01-12T00:00:00Z',
-    updatedAt: '2024-01-12T00:00:00Z'
+// Função para gerar dados aleatórios realistas
+const generateMockMembers = (): Member[] => {
+  const nomes = [
+    'João Silva Santos', 'Maria Oliveira Costa', 'Pedro Almeida Junior', 'Ana Paula Ferreira',
+    'Carlos Eduardo Lima', 'Fernanda Santos Rocha', 'Roberto Mendes Silva', 'Juliana Costa Barbosa',
+    'Marcos Antônio Pereira', 'Luciana Gomes Martins', 'Gabriel Costa Ribeiro', 'Beatriz Alves Souza',
+    'Rafael Santos Oliveira', 'Patrícia Lima Ferreira', 'André Luiz Barbosa', 'Camila Rodrigues Silva',
+    'Felipe Henrique Costa', 'Mariana Alves Santos', 'Lucas Gabriel Pereira', 'Priscila Santos Lima',
+    'Rodrigo Almeida Souza', 'Vanessa Costa Ribeiro', 'Thiago Silva Barbosa', 'Amanda Ferreira Costa',
+    'Bruno Henrique Lima', 'Larissa Oliveira Santos', 'Diego Costa Almeida', 'Natália Silva Ferreira',
+    'Vinicius Santos Barbosa', 'Isabella Costa Lima', 'Gustavo Almeida Santos', 'Bianca Ferreira Costa',
+    'Leonardo Silva Barbosa', 'Gabriela Costa Santos', 'Matheus Almeida Lima', 'Carolina Santos Costa',
+    'Daniel Silva Ferreira', 'Fernanda Lima Santos', 'Ricardo Costa Barbosa', 'Jéssica Almeida Silva',
+    'Victor Hugo Costa', 'Marina Santos Lima', 'Eduardo Silva Barbosa', 'Renata Costa Ferreira',
+    'Henrique Lima Santos', 'Débora Silva Costa', 'Alexandre Santos Barbosa', 'Tatiane Costa Lima',
+    'Paulo César Silva', 'Adriana Santos Costa', 'Fábio Lima Barbosa', 'Cristina Costa Santos'
+  ];
+
+  const bairros = [
+    'Vila Palestina', 'Centro', 'Jardim São Paulo', 'Vila Nova', 'Conjunto Habitacional',
+    'Jardim Europa', 'Vila Industrial', 'Parque das Flores', 'Jardim América', 'Vila São José'
+  ];
+
+  const telefones = [
+    '(11) 98765-4321', '(11) 97654-3210', '(11) 96543-2109', '(11) 95432-1098',
+    '(11) 94321-0987', '(11) 93210-9876', '(11) 92109-8765', '(11) 91098-7654',
+    '(11) 90987-6543', '(11) 89876-5432'
+  ];
+
+  const members: Member[] = [];
+  
+  // Estatísticas reais conforme solicitado
+  let ativosCount = 0;
+  let desligadosCount = 0;
+  let batizadosCount = 0;
+  let naoBatizadosCount = 0;
+  let homensCount = 0;
+  let mulheresCount = 0;
+
+  for (let i = 0; i < 141; i++) {
+    const isAtivo = ativosCount < 134;
+    const isBatizado = batizadosCount < 117;
+    const isMasculino = homensCount < 58;
+    const isMembro = isBatizado && Math.random() > 0.3; // 70% dos batizados são membros
+    
+    // Gerar data de nascimento aleatória (entre 1940 e 2010)
+    const anoNasc = 1940 + Math.floor(Math.random() * 70);
+    const mesNasc = 1 + Math.floor(Math.random() * 12);
+    const diaNasc = 1 + Math.floor(Math.random() * 28);
+    const dataNascimento = `${anoNasc}-${mesNasc.toString().padStart(2, '0')}-${diaNasc.toString().padStart(2, '0')}`;
+
+    const member: Member = {
+      id: (i + 1).toString(),
+      nome: nomes[i % nomes.length] + (i > nomes.length ? ` ${Math.floor(i / nomes.length) + 1}` : ''),
+      dataNascimento,
+      sexo: isMasculino ? 'M' : 'F',
+      telefone: telefones[i % telefones.length],
+      email: `membro${i + 1}@email.com`,
+      endereco: `Rua ${i + 1}, ${100 + i}`,
+      bairro: bairros[i % bairros.length],
+      cidade: 'São Paulo',
+      cep: `${(1000 + i).toString().padStart(5, '0')}-${Math.floor(Math.random() * 999).toString().padStart(3, '0')}`,
+      status: isAtivo ? 'ativo' : 'desligado',
+      batizado: isBatizado,
+      membro: isMembro,
+      dataBatismo: isBatizado ? `${anoNasc + 18 + Math.floor(Math.random() * 10)}-${mesNasc.toString().padStart(2, '0')}-${diaNasc.toString().padStart(2, '0')}` : undefined,
+      dataMembresia: isMembro ? `${anoNasc + 19 + Math.floor(Math.random() * 10)}-${mesNasc.toString().padStart(2, '0')}-${diaNasc.toString().padStart(2, '0')}` : undefined,
+      dataDesligamento: !isAtivo ? '2023-08-15' : undefined,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z'
+    };
+
+    members.push(member);
+
+    // Atualizar contadores
+    if (isAtivo) ativosCount++;
+    else desligadosCount++;
+    
+    if (isBatizado) batizadosCount++;
+    else naoBatizadosCount++;
+    
+    if (isMasculino) homensCount++;
+    else mulheresCount++;
   }
-];
+
+  return members;
+};
+
+export const mockMembers: Member[] = generateMockMembers();

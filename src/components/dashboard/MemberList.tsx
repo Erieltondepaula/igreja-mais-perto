@@ -9,7 +9,7 @@ import { Eye, Edit, Download, Users, Trash2, ArrowUpDown, ArrowUp, ArrowDown } f
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MemberDetails } from './MemberDetails';
 import { MemberEdit } from './MemberEdit';
-import { calculateAge } from '@/utils/memberUtils';
+import { calculateAge, formatStatus, getStatusColor, getMemberType } from '@/utils/memberUtils';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
@@ -148,9 +148,7 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
   };
 
   const getTipoMembroText = (member: Member) => {
-    if (member.batizado && member.membro) return 'Membro';
-    if (member.batizado) return 'Batizado';
-    return 'Congregado';
+    return getMemberType(member);
   };
 
   const getTipoMembroIcon = (member: Member) => {

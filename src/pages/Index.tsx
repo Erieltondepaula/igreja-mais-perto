@@ -169,7 +169,13 @@ const Index = () => {
         <SummaryCards members={members} />
 
         {/* Import/Export */}
-        <ImportExport members={members} onImport={handleImport} onReplaceAll={handleReplaceAll} />
+        <ImportExport 
+          members={members} 
+          filteredMembers={filteredMembers}
+          filters={filters}
+          onImport={handleImport} 
+          onReplaceAll={handleReplaceAll} 
+        />
 
         {/* Filters */}
         <MemberFiltersComponent 

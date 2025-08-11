@@ -15,6 +15,8 @@ interface MemberDetailsProps {
 export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) => {
   const [uploading, setUploading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editedMember, setEditedMember] = useState<Member>(member);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -25,8 +27,16 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
     
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      const updatedMember = { ...member, photoUrl: result, updatedAt: new Date().toISOString() };
-      onMemberUpdate(updatedMember);
+      if (isEditing) {
+        setEditedMember(prev => ({
+          ...prev,
+          photoUrl: result
+        }));
+        setPhotoFile(file);
+      } else {
+        const updatedMember = { ...member, photoUrl: result, updatedAt: new Date().toISOString() };
+        onMemberUpdate(updatedMember);
+      }
       setUploading(false);
     };
     
@@ -35,12 +45,13 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
 
   const handleSave = () => {
     if (onMemberUpdate) {
-      onMemberUpdate({ ...member, updatedAt: new Date().toISOString() });
+      onMemberUpdate({ ...editedMember, updatedAt: new Date().toISOString() });
       setIsEditing(false);
     }
   };
 
   const handleEdit = () => {
+    setEditedMember(member);
     setIsEditing(true);
   };
 

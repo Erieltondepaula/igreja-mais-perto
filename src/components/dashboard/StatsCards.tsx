@@ -9,10 +9,10 @@ interface StatsCardsProps {
 
 export const StatsCards = ({ members, onCardClick }: StatsCardsProps) => {
   const stats = {
-    total: members.filter(m => m.status !== 'desligado').length,
+    total: members.length,
     ativos: members.filter(m => m.status === 'ativo').length,
-    batizados: members.filter(m => m.status === 'batizado').length,
-    membros: members.filter(m => m.status === 'membro').length,
+    batizados: members.filter(m => m.batizado === true).length,
+    membros: members.filter(m => m.membro === true).length,
     desligados: members.filter(m => m.status === 'desligado').length
   };
 
