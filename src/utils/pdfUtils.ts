@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Member } from '@/types/member';
-import { calculateAge } from './memberUtils';
+import { calculateAge, getMemberType } from './memberUtils';
 
 export const exportToPDF = (
   members: Member[], 
@@ -81,16 +81,4 @@ export const exportToPDF = (
   
   // Salvar o arquivo
   doc.save(`${filename}.pdf`);
-};
-
-const getMemberType = (member: Member): string => {
-  if (member.batizado && member.membro) {
-    return 'Batizado/Membro';
-  } else if (member.batizado && !member.membro) {
-    return 'Congregado/Batizado';
-  } else if (!member.batizado && !member.membro) {
-    return 'Congregado/Não Batizado';
-  } else {
-    return 'Não Batizado/Membro';
-  }
 };

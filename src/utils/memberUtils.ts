@@ -97,22 +97,22 @@ export const getGenderChartData = (members: Member[]): ChartData[] => {
 
 export const getAgeGroupChartData = (members: Member[]): AgeGroupData[] => {
   const ageGroups = {
-    '0-12': 0,
-    '13-17': 0,
-    '18-30': 0,
-    '31-45': 0,
-    '46-60': 0,
-    '61+': 0
-  };
+    'Infância': 0, // 0-6
+    'Criança': 0, // 7-10
+    'Adolescente': 0, // 11-17
+    'Jovens': 0, // 18-35
+    'Adulto': 0, // 36-59
+    'Idoso': 0 // 60+
+  } as Record<string, number>;
   
   members.forEach(member => {
     const age = calculateAge(member.dataNascimento);
-    if (age <= 12) ageGroups['0-12']++;
-    else if (age <= 17) ageGroups['13-17']++;
-    else if (age <= 30) ageGroups['18-30']++;
-    else if (age <= 45) ageGroups['31-45']++;
-    else if (age <= 60) ageGroups['46-60']++;
-    else ageGroups['61+']++;
+    if (age <= 6) ageGroups['Infância']++;
+    else if (age <= 10) ageGroups['Criança']++;
+    else if (age <= 17) ageGroups['Adolescente']++;
+    else if (age <= 35) ageGroups['Jovens']++;
+    else if (age <= 59) ageGroups['Adulto']++;
+    else ageGroups['Idoso']++;
   });
   
   return Object.entries(ageGroups).map(([faixaEtaria, quantidade], index) => ({
@@ -124,12 +124,12 @@ export const getAgeGroupChartData = (members: Member[]): AgeGroupData[] => {
 
 export const getAgeRangeFromGroup = (ageGroup: string): [number, number] => {
   switch (ageGroup) {
-    case '0-12': return [0, 12];
-    case '13-17': return [13, 17];
-    case '18-30': return [18, 30];
-    case '31-45': return [31, 45];
-    case '46-60': return [46, 60];
-    case '61+': return [61, 150];
+    case 'Infância': return [0, 6];
+    case 'Criança': return [7, 10];
+    case 'Adolescente': return [11, 17];
+    case 'Jovens': return [18, 35];
+    case 'Adulto': return [36, 59];
+    case 'Idoso': return [60, 150];
     default: return [0, 150];
   }
 };
@@ -168,6 +168,9 @@ export const formatStatus = (status: string): string => {
 };
 
 export const getMemberType = (member: Member): string => {
+  if (member.status === 'desligado') {
+    return 'Desligado';
+  }
   if (member.batizado && member.membro) {
     return 'Batizado/Membro';
   } else if (member.batizado && !member.membro) {

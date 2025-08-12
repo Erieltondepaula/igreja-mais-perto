@@ -24,7 +24,7 @@ export const AgeChart = ({ members, onBarClick }: AgeChartProps) => {
       const percentage = ((value / members.length) * 100).toFixed(1);
       return (
         <div className="bg-card border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{label} anos</p>
+          <p className="font-medium">{label}</p>
           <p className="text-primary">
             {value} pessoas ({percentage}%)
           </p>

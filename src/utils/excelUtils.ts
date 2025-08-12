@@ -2,6 +2,12 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { Member } from '@/types/member';
 
+export const parseBoolean = (value: any): boolean => {
+  if (value === undefined || value === null) return false;
+  const val = String(value).trim().toLowerCase();
+  return val === 'sim' || val === 's' || val === 'true' || val === '1' || val === 'yes' || val === 'y';
+};
+
 export const exportToExcel = (members: Member[], filename: string = 'membros') => {
   const exportData = members.map(member => ({
     'Nome': member.nome,
@@ -56,19 +62,12 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
             return '';
           };
 
-          // Determinar status baseado nos campos Batizado e Membro
-          let status: Member['status'] = 'ativo';
-          const batizado = row['Batizado ?'] === 'Sim' || row['batizado'] === true;
-          const membro = row['Membro?'] === 'Sim' || row['membro'] === true;
-          const situacao = row['Situação Atual'] || row['situacaoAtual'] || 'Ativo';
-          
-          if (situacao.toLowerCase().includes('desligado')) {
-            status = 'desligado';
-          } else if (membro) {
-            status = 'membro';
-          } else if (batizado) {
-            status = 'batizado';
-          }
+          // Parse de booleanos e status
+          const batizado: boolean = parseBoolean(row['Batizado ?'] ?? row['Batizado'] ?? row['batizado']);
+          const membro: boolean = parseBoolean(row['Membro?'] ?? row['Membro'] ?? row['membro']);
+          const statusCell = row['Status'] ?? row['status'] ?? row['Situação Atual'] ?? row['situacaoAtual'] ?? '';
+          const statusNormalized = typeof statusCell === 'string' ? statusCell.trim().toLowerCase() : '';
+          const status: Member['status'] = statusNormalized.includes('desligado') ? 'desligado' : 'ativo';
 
           return {
             nome: row['NOME '] || row['Nome'] || row['nome'] || '',
@@ -76,7 +75,7 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
             dataNascimento: convertExcelDate(row['Data de Nascimento']) || row['dataNascimento'] || '',
             idade: row['Idade'] || row['idade'] || undefined,
             mes: row['Mês'] || row['mes'] || '',
-            sexo: (row['Sexo'] === 'Masculino' || row['sexo'] === 'M') ? 'M' : 'F',
+            sexo: (row['Sexo'] && String(row['Sexo']).toLowerCase().startsWith('m')) || row['sexo'] === 'M' ? 'M' : 'F',
             telefone: row['Telefone'] || row['telefone'] || '',
             email: row['Email'] || row['email'] || '',
             endereco: (row['Rua'] || row['endereco'] || '') + (row['Nº'] ? `, ${row['Nº']}` : ''),
@@ -92,10 +91,10 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
             batizado,
             membro,
             situacaoAtual: row['Situação Atual'] || row['situacaoAtual'] || '',
-            lider: row['É lider ?'] === 'Sim' || row['lider'] === true,
-            professorEBQ: row['É Professor EBQ ?'] === 'Sim' || row['professorEBQ'] === true,
+            lider: parseBoolean(row['É lider ?'] ?? row['É líder ?'] ?? row['lider']),
+            professorEBQ: parseBoolean(row['É Professor EBQ ?'] ?? row['professorEBQ']),
             faixaEtaria: row['Faixa Etária'] || row['faixaEtaria'] || '',
-            pequeno_grupo: row['Está em um pequeno grupo ?'] === 'Sim' || row['pequeno_grupo'] === true,
+            pequeno_grupo: parseBoolean(row['Está em um pequeno grupo ?'] ?? row['pequeno_grupo']),
             grupo: row['Em que grupo está ?'] || row['grupo'] || '',
             numero_domes: row['Numerodomes'] || row['numero_domes'] || undefined,
             observacoes: row['Observações'] || row['observacoes'] || undefined
