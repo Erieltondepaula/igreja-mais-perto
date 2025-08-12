@@ -1,28 +1,35 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, TooltipProps } from 'recharts';
 import { Member } from '@/types/member';
 import { getGenderChartData } from '@/utils/memberUtils';
 import { Users } from 'lucide-react';
+import React from 'react';
 
 interface GenderChartProps {
   members: Member[];
-  onSegmentClick?: (sexo: string) => void;
+  onSegmentClick?: (sexo: 'M' | 'F') => void;
+}
+
+interface GenderData {
+  name: string;
+  value: number;
+  fill?: string;
 }
 
 export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
-  const data = getGenderChartData(members).map(item => ({
+  const data: GenderData[] = getGenderChartData(members).map(item => ({
     ...item,
     fill: item.name === 'Masculino' ? '#3B82F6' : '#EC4899' // Azul para masculino, rosa para feminino
   }));
 
-  const handleClick = (data: any) => {
+  const handleClick = (data: GenderData) => {
     if (onSegmentClick) {
       const sexo = data.name === 'Masculino' ? 'M' : 'F';
       onSegmentClick(sexo);
     }
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       const percentage = ((data.value / members.length) * 100).toFixed(1);
@@ -62,8 +69,8 @@ export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
                 className="cursor-pointer"
               >
                 {data.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
+                  <Cell
+                    key={`cell-${index}`}
                     fill={entry.fill}
                     className="hover:opacity-80 transition-opacity cursor-pointer"
                   />
@@ -76,8 +83,8 @@ export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
         </div>
         <div className="grid grid-cols-2 gap-4 mt-4">
           {data.map((item, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="text-center cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
               onClick={() => handleClick(item)}
             >

@@ -12,6 +12,9 @@ import { Upload, Download, FileSpreadsheet, Database, AlertCircle, CheckCircle2,
 import { useRef, useState } from 'react';
 import { MemberFilters } from '@/types/member';
 
+// Importação correta do XLSX usada apenas na função de template
+import * as XLSX from 'xlsx';
+
 interface ImportExportProps {
   members: Member[];
   filteredMembers?: Member[];
@@ -42,9 +45,9 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
 
     setImporting(true);
     setUploadProgress(0);
-    
+
     try {
-      // Simular progresso
+      // Simula progresso enquanto importa o arquivo
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           if (prev >= 90) {
@@ -56,13 +59,13 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
       }, 100);
 
       const importedMembers = await importFromExcel(file);
-      
+
       clearInterval(progressInterval);
       setUploadProgress(100);
-      
+
       setPreviewData(importedMembers);
       setShowPreview(true);
-      
+
       toast({
         title: "Arquivo carregado com sucesso!",
         description: `${importedMembers.length} registros encontrados. Revise os dados antes de importar.`
@@ -109,7 +112,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
   };
 
   const handleExportPDF = () => {
-    const membersToExport = filteredMembers || members;
+    const membersToExport = filteredMembers ?? members;
     exportToPDF(membersToExport, filters, 'relatorio-membros');
     toast({
       title: "Exportação PDF concluída",
@@ -119,30 +122,29 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
 
   const downloadTemplate = () => {
     const template = [{
-      'Nome': 'Exemplo da Silva',
-      'Data de Nascimento': '1990-01-01',
-      'Sexo': 'Masculino',
-      'Telefone': '(11) 99999-9999',
-      'Email': 'exemplo@email.com',
-      'Endereço': 'Rua Exemplo, 123',
-      'Bairro': 'Centro',
-      'Cidade': 'São Paulo',
-      'CEP': '01234-567',
-      'Status': 'ativo',
-      'Data Batismo': '',
-      'Data Membresia': '',
-      'Data Desligamento': '',
-      'Observações': ''
+      nome: 'Exemplo da Silva',
+      data_nascimento: '1990-01-01',
+      sexo: 'Masculino',
+      telefone: '(11) 99999-9999',
+      email: 'exemplo@email.com',
+      endereco: 'Rua Exemplo, 123',
+      bairro: 'Centro',
+      cidade: 'São Paulo',
+      cep: '01234-567',
+      status: 'ativo',
+      data_batismo: '',
+      data_membresia: '',
+      data_desligamento: '',
+      observacoes: ''
     }];
 
-    const XLSX = require('xlsx');
     const worksheet = XLSX.utils.json_to_sheet(template);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
 
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    
+
     const link = document.createElement('a');
     link.href = URL.createObjectURL(data);
     link.download = 'template-membros.xlsx';
@@ -175,7 +177,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
                 Faça upload do seu arquivo XLS para análise completa
               </p>
             </div>
-            
+
             <Input
               id="upload-file"
               type="file"
@@ -185,7 +187,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
               ref={fileInputRef}
               className="hidden"
             />
-            
+
             <Button
               size="lg"
               onClick={() => fileInputRef.current?.click()}
@@ -195,7 +197,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
               <Upload className="h-4 w-4 mr-2" />
               {importing ? 'Carregando...' : 'Selecionar Arquivo XLS'}
             </Button>
-            
+
             {uploadProgress > 0 && (
               <div className="w-full max-w-xs mx-auto">
                 <Progress value={uploadProgress} className="w-full" />
@@ -219,7 +221,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
                     Encontrados {previewData.length} registros. Primeiros registros:
                   </p>
                 </div>
-                
+
                 <div className="bg-muted/50 rounded p-3 text-xs space-y-1 max-h-32 overflow-y-auto">
                   {previewData.slice(0, 5).map((member, index) => (
                     <div key={index} className="flex gap-4">
@@ -280,7 +282,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
             Formato do Arquivo
           </h4>
           <div className="text-sm text-muted-foreground space-y-1">
-            <p><strong>Colunas obrigatórias:</strong> Nome, Data de Nascimento, Sexo, Bairro</p>
+            <p><strong>Colunas obrigatórias:</strong> nome, data_nascimento, sexo, bairro</p>
             <p><strong>Data de nascimento:</strong> AAAA-MM-DD (ex: 1990-12-25)</p>
             <p><strong>Sexo:</strong> "Masculino" ou "Feminino" (ou "M"/"F")</p>
             <p><strong>Status:</strong> "ativo", "batizado", "membro" ou "desligado"</p>

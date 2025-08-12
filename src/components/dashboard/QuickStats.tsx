@@ -2,43 +2,50 @@ import { Member } from '@/types/member';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, UserCheck, UserX, Crown, GraduationCap } from 'lucide-react';
-import { calculateAge } from '@/utils/memberUtils';
 
 interface QuickStatsProps {
   members: Member[];
 }
 
 export const QuickStats = ({ members }: QuickStatsProps) => {
+  const currentYear = new Date().getFullYear();
+
+  // Função para calcular idade corretamente, considerando mês e dia para precisão
+  const calculateAge = (birthDate: string) => {
+    const birth = new Date(birthDate);
+    let age = currentYear - birth.getFullYear();
+    const monthDiff = new Date().getMonth() - birth.getMonth();
+    const dayDiff = new Date().getDate() - birth.getDate();
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+      age--;
+    }
+    return age;
+  };
+
   const totalMembers = members.length;
-  const activeMembers = members.filter(m => m.status !== 'desligado').length;
-  const inactiveMembers = members.filter(m => m.status === 'desligado').length;
+  const activeMembers = members.filter(m => m.status === 'ativo').length; // Filtra só 'ativo'
+  const inactiveMembers = totalMembers - activeMembers;
+
   const baptizedMembers = members.filter(m => m.batizado).length;
-  const notBaptizedMembers = members.filter(m => !m.batizado).length;
+  const notBaptizedMembers = totalMembers - baptizedMembers;
+
   const membersWithRole = members.filter(m => m.lider || m.professorEBQ).length;
-  const membersWithoutRole = members.filter(m => !m.lider && !m.professorEBQ).length;
-  
+  const membersWithoutRole = totalMembers - membersWithRole;
+
   const men = members.filter(m => m.sexo === 'M').length;
   const women = members.filter(m => m.sexo === 'F').length;
-  
-  const children = members.filter(m => {
-    const age = calculateAge(m.dataNascimento);
-    return age >= 0 && age <= 12;
-  }).length;
-  
+
+  // Faixas etárias usando a função com precisão
+  const children = members.filter(m => calculateAge(m.dataNascimento) <= 12).length;
   const youth = members.filter(m => {
     const age = calculateAge(m.dataNascimento);
     return age >= 13 && age <= 17;
   }).length;
-  
   const adults = members.filter(m => {
     const age = calculateAge(m.dataNascimento);
     return age >= 18 && age <= 59;
   }).length;
-  
-  const elderly = members.filter(m => {
-    const age = calculateAge(m.dataNascimento);
-    return age >= 60;
-  }).length;
+  const elderly = members.filter(m => calculateAge(m.dataNascimento) >= 60).length;
 
   const baptizedPercentage = totalMembers > 0 ? Math.round((baptizedMembers / totalMembers) * 100) : 0;
   const activePercentage = totalMembers > 0 ? Math.round((activeMembers / totalMembers) * 100) : 0;

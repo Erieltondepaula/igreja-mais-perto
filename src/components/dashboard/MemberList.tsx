@@ -28,6 +28,8 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  type SortableValue = string | number | Date;
+
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -41,7 +43,8 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
     if (!sortField) return members;
 
     return [...members].sort((a, b) => {
-      let aValue, bValue;
+      let aValue: SortableValue;
+      let bValue: SortableValue;
 
       switch (sortField) {
         case 'nome':
@@ -57,24 +60,26 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
           bValue = b.sexo === 'M' ? 'Masculino' : 'Feminino';
           break;
         case 'telefone':
-          aValue = a.telefone;
-          bValue = b.telefone;
+          aValue = a.telefone || '';
+          bValue = b.telefone || '';
           break;
         case 'bairro':
-          aValue = a.bairro;
-          bValue = b.bairro;
+          aValue = a.bairro || '';
+          bValue = b.bairro || '';
           break;
         case 'status':
-          aValue = a.status;
-          bValue = b.status;
+          // Apenas considerar 'ativo' ou 'desligado', ignorar outros valores
+          aValue = a.status === 'ativo' ? 'ativo' : 'desligado';
+          bValue = b.status === 'ativo' ? 'ativo' : 'desligado';
           break;
         case 'tipo':
+          // Ajustado para refletir que membro é sempre batizado
           aValue = getTipoMembroText(a);
           bValue = getTipoMembroText(b);
           break;
         case 'dataNascimento':
-          aValue = new Date(a.dataNascimento);
-          bValue = new Date(b.dataNascimento);
+          aValue = a.dataNascimento ? new Date(a.dataNascimento) : new Date(0);
+          bValue = b.dataNascimento ? new Date(b.dataNascimento) : new Date(0);
           break;
         default:
           return 0;
@@ -103,14 +108,14 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
 
   const handleSelectMember = (memberId: string, checked: boolean) => {
     if (checked) {
-      setSelectedMembers(prev => [...prev, memberId]);
+      setSelectedMembers(prev => (prev.includes(memberId) ? prev : [...prev, memberId]));
     } else {
       setSelectedMembers(prev => prev.filter(id => id !== memberId));
     }
   };
 
   const exportToExcel = (exportSelected = false) => {
-    const membersToExport = exportSelected 
+    const membersToExport = exportSelected
       ? sortedMembers.filter(m => selectedMembers.includes(m.id))
       : sortedMembers;
 
@@ -120,41 +125,46 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
       'Data de Nascimento': member.dataNascimento,
       Idade: calculateAge(member.dataNascimento),
       Sexo: member.sexo === 'M' ? 'Masculino' : 'Feminino',
-      Telefone: member.telefone,
-      Email: member.email,
-      Endereço: member.endereco,
-      Bairro: member.bairro,
-      Cidade: member.cidade,
-      CEP: member.cep,
-      Status: member.status,
+      Telefone: member.telefone || '',
+      Email: member.email || '',
+      Endereço: member.endereco || '',
+      Bairro: member.bairro || '',
+      Cidade: member.cidade || '',
+      CEP: member.cep || '',
+      Status: member.status === 'ativo' ? 'Ativo' : 'Desligado',
       'Status Civil': member.statusCivil || '',
       Batizado: member.batizado ? 'Sim' : 'Não',
-      Membro: member.membro ? 'Sim' : 'Não',
+      // Removei 'Membro' pois é redundante com batizado
       Líder: member.lider ? 'Sim' : 'Não',
-      'Professor EBQ': member.professorEBQ ? 'Sim' : 'Não'
+      'Professor EBQ': member.professorEBQ ? 'Sim' : 'Não',
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Membros');
     const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-    
-    const filename = exportSelected 
-      ? `membros_selecionados_${selectedMembers.length}.xlsx`
-      : 'membros.xlsx';
-    
+    const data = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+    });
+
+    const filename = exportSelected ? `membros_selecionados_${selectedMembers.length}.xlsx` : 'membros.xlsx';
+
     saveAs(data, filename);
   };
 
   const getTipoMembroText = (member: Member) => {
-    return getMemberType(member);
+    // Agora assume que membro sempre é batizado, só indicamos tipo conforme função
+    if (member.status === 'desligado') return 'Desligado';
+    if (member.lider) return 'Líder';
+    if (member.professorEBQ) return 'Professor EBQ';
+    return 'Membro';
   };
 
   const getTipoMembroIcon = (member: Member) => {
-    if (member.batizado && member.membro) return '🔷';
-    if (member.batizado) return '🔵';
-    return '🟡';
+    if (member.status === 'desligado') return '⚪';
+    if (member.lider) return '🔷';
+    if (member.professorEBQ) return '📚';
+    return '🔵';
   };
 
   return (
@@ -165,9 +175,7 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
             <Users className="h-5 w-5" />
             Lista de Membros ({sortedMembers.length})
             {selectedMembers.length > 0 && (
-              <span className="text-sm font-normal text-muted-foreground">
-                ({selectedMembers.length} selecionados)
-              </span>
+              <span className="text-sm font-normal text-muted-foreground"> ({selectedMembers.length} selecionados)</span>
             )}
           </CardTitle>
           <div className="flex gap-2">
@@ -195,66 +203,50 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
                 />
               </TableHead>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('nome')}>
-                <div className="flex items-center gap-1">
-                  Nome {getSortIcon('nome')}
-                </div>
+                <div className="flex items-center gap-1">Nome {getSortIcon('nome')}</div>
               </TableHead>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('dataNascimento')}>
-                <div className="flex items-center gap-1">
-                  Data Nascimento {getSortIcon('dataNascimento')}
-                </div>
+                <div className="flex items-center gap-1">Data Nascimento {getSortIcon('dataNascimento')}</div>
               </TableHead>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('idade')}>
-                <div className="flex items-center gap-1">
-                  Idade {getSortIcon('idade')}
-                </div>
+                <div className="flex items-center gap-1">Idade {getSortIcon('idade')}</div>
               </TableHead>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('sexo')}>
-                <div className="flex items-center gap-1">
-                  Sexo {getSortIcon('sexo')}
-                </div>
+                <div className="flex items-center gap-1">Sexo {getSortIcon('sexo')}</div>
               </TableHead>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('telefone')}>
-                <div className="flex items-center gap-1">
-                  Telefone {getSortIcon('telefone')}
-                </div>
+                <div className="flex items-center gap-1">Telefone {getSortIcon('telefone')}</div>
               </TableHead>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('bairro')}>
-                <div className="flex items-center gap-1">
-                  Bairro {getSortIcon('bairro')}
-                </div>
+                <div className="flex items-center gap-1">Bairro {getSortIcon('bairro')}</div>
               </TableHead>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
-                <div className="flex items-center gap-1">
-                  Status {getSortIcon('status')}
-                </div>
+                <div className="flex items-center gap-1">Status {getSortIcon('status')}</div>
               </TableHead>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('tipo')}>
-                <div className="flex items-center gap-1">
-                  Tipo {getSortIcon('tipo')}
-                </div>
+                <div className="flex items-center gap-1">Tipo {getSortIcon('tipo')}</div>
               </TableHead>
               <TableHead>Funções</TableHead>
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedMembers.map((member) => (
+            {sortedMembers.map(member => (
               <TableRow key={member.id}>
                 <TableCell>
                   <Checkbox
                     checked={selectedMembers.includes(member.id)}
-                    onCheckedChange={(checked) => handleSelectMember(member.id, checked as boolean)}
+                    onCheckedChange={checked => handleSelectMember(member.id, checked as boolean)}
                   />
                 </TableCell>
                 <TableCell className="font-medium">{member.nome}</TableCell>
                 <TableCell>{new Date(member.dataNascimento).toLocaleDateString('pt-BR')}</TableCell>
                 <TableCell>{calculateAge(member.dataNascimento)} anos</TableCell>
                 <TableCell>{member.sexo === 'M' ? 'Masculino' : 'Feminino'}</TableCell>
-                <TableCell>{member.telefone}</TableCell>
-                <TableCell>{member.bairro}</TableCell>
+                <TableCell>{member.telefone || ''}</TableCell>
+                <TableCell>{member.bairro || ''}</TableCell>
                 <TableCell>
-                  <Badge 
+                  <Badge
                     variant={member.status === 'ativo' ? 'default' : 'destructive'}
                     className="text-white"
                   >
@@ -263,11 +255,16 @@ export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps
                 </TableCell>
                 <TableCell>
                   {member.status !== 'desligado' ? (
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className="text-white"
-                      style={{ 
-                        backgroundColor: member.batizado && member.membro ? '#1e40af' : member.batizado ? '#3b82f6' : '#eab308'
+                      style={{
+                        backgroundColor:
+                          member.lider
+                            ? '#1e40af' // azul escuro para líder
+                            : member.professorEBQ
+                            ? '#3b82f6' // azul claro para professor EBQ
+                            : '#3b82f6', // padrão azul para membro
                       }}
                     >
                       {getTipoMembroIcon(member)} {getTipoMembroText(member)}

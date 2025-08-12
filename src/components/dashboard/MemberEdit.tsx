@@ -28,32 +28,39 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
   if (!member || !editedMember) return null;
 
   const handleSave = () => {
-    if (editedMember) {
-      onSave({ ...editedMember, updatedAt: new Date().toISOString() });
-      toast({
-        title: "Membro atualizado",
-        description: "Os dados do membro foram atualizados com sucesso."
-      });
-      onClose();
-    }
+    onSave({ ...editedMember, updatedAt: new Date().toISOString() });
+    toast({
+      title: "Membro atualizado",
+      description: "Os dados do membro foram atualizados com sucesso."
+    });
+    onClose();
   };
 
   const updateField = (field: keyof Member, value: unknown) => {
-    setEditedMember(prev => prev ? { ...prev, [field]: value } : null);
+    setEditedMember(prev => {
+      if (!prev) return null;
+      let updated = { ...prev, [field]: value };
 
-    // Se alterar status para 'desligado', limpar vínculos automaticamente
-    if (field === 'status' && value === 'desligado') {
-      setEditedMember(prev => prev ? {
-        ...prev,
-        membro: false,
-        batizado: false,
-        lider: false,
-        professorEBQ: false,
-      } : null);
-    }
+      // Se alterar status para 'desligado', limpar vínculos automaticamente
+      if (field === 'status' && value === 'desligado') {
+        updated = {
+          ...updated,
+          membro: false,
+          batizado: false,
+          lider: false,
+          professorEBQ: false,
+        };
+      }
+
+      // Se desmarcar 'membro', batizado deve ser falso automaticamente
+      if (field === 'membro' && value === false) {
+        updated.batizado = false;
+      }
+
+      return updated;
+    });
   };
 
-  // Verifica se o status é desligado para controlar visibilidade/estado dos campos
   const isDesligado = editedMember.status === 'desligado';
 
   return (
@@ -62,7 +69,7 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
         <DialogHeader>
           <DialogTitle>Editar Membro</DialogTitle>
         </DialogHeader>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <Label htmlFor="photo">Foto do Membro</Label>
@@ -120,14 +127,14 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             <Input
               id="dataNascimento"
               type="date"
-              value={editedMember.dataNascimento}
+              value={editedMember.dataNascimento || ''}
               onChange={(e) => updateField('dataNascimento', e.target.value)}
             />
           </div>
 
           <div>
             <Label htmlFor="sexo">Sexo</Label>
-            <Select value={editedMember.sexo} onValueChange={(value) => updateField('sexo', value)}>
+            <Select value={editedMember.sexo || ''} onValueChange={(value) => updateField('sexo', value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -142,7 +149,7 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             <Label htmlFor="telefone">Telefone</Label>
             <Input
               id="telefone"
-              value={editedMember.telefone}
+              value={editedMember.telefone || ''}
               onChange={(e) => updateField('telefone', e.target.value)}
             />
           </div>
@@ -151,7 +158,7 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
-              value={editedMember.email}
+              value={editedMember.email || ''}
               onChange={(e) => updateField('email', e.target.value)}
             />
           </div>
@@ -160,7 +167,7 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             <Label htmlFor="endereco">Endereço</Label>
             <Input
               id="endereco"
-              value={editedMember.endereco}
+              value={editedMember.endereco || ''}
               onChange={(e) => updateField('endereco', e.target.value)}
             />
           </div>
@@ -169,7 +176,7 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             <Label htmlFor="bairro">Bairro</Label>
             <Input
               id="bairro"
-              value={editedMember.bairro}
+              value={editedMember.bairro || ''}
               onChange={(e) => updateField('bairro', e.target.value)}
             />
           </div>
@@ -178,7 +185,7 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             <Label htmlFor="cidade">Cidade</Label>
             <Input
               id="cidade"
-              value={editedMember.cidade}
+              value={editedMember.cidade || ''}
               onChange={(e) => updateField('cidade', e.target.value)}
             />
           </div>
@@ -187,14 +194,14 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             <Label htmlFor="cep">CEP</Label>
             <Input
               id="cep"
-              value={editedMember.cep}
+              value={editedMember.cep || ''}
               onChange={(e) => updateField('cep', e.target.value)}
             />
           </div>
 
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={editedMember.status} onValueChange={(value) => updateField('status', value)}>
+            <Select value={editedMember.status || ''} onValueChange={(value) => updateField('status', value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -226,20 +233,13 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             />
           </div>
 
-          {/* Aqui começa a alteração para ocultar/desabilitar os switches se status for desligado */}
           {!isDesligado && (
             <>
               <div className="flex items-center space-x-2">
                 <Switch
                   id="membro"
                   checked={editedMember.membro || false}
-                  onCheckedChange={(checked) => {
-                    updateField('membro', checked);
-                    if (!checked) {
-                      // Ao desmarcar membro, batizado deve ser falso automaticamente
-                      updateField('batizado', false);
-                    }
-                  }}
+                  onCheckedChange={(checked) => updateField('membro', checked)}
                 />
                 <Label htmlFor="membro">Membro</Label>
               </div>
@@ -249,7 +249,7 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
                   id="batizado"
                   checked={editedMember.batizado || false}
                   onCheckedChange={(checked) => updateField('batizado', checked)}
-                  disabled={!editedMember.membro} // Desabilita se não for membro
+                  disabled={!editedMember.membro}
                 />
                 <Label htmlFor="batizado">Batizado</Label>
               </div>
@@ -273,7 +273,6 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
               </div>
             </>
           )}
-          {/* Fim da alteração */}
         </div>
 
         <DialogFooter>

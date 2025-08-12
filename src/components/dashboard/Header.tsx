@@ -15,13 +15,18 @@ export const Header = () => {
 
     setUploading(true);
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       const result = e.target?.result as string;
       setLogoUrl(result);
       setUploading(false);
     };
-    
+
+    reader.onerror = () => {
+      setUploading(false);
+      // Opcional: adicionar tratamento de erro, exibir mensagem para usuário
+    };
+
     reader.readAsDataURL(file);
   };
 
@@ -29,7 +34,7 @@ export const Header = () => {
     <Card className="rounded-xl shadow-md p-4 mb-6 bg-card">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="relative">
+          <div className="relative group">
             {logoUrl ? (
               <img
                 src={logoUrl}
@@ -41,18 +46,21 @@ export const Header = () => {
                 <Church className="h-8 w-8 text-muted-foreground" />
               </div>
             )}
-            <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-              <label htmlFor="logo-upload" className="cursor-pointer">
-                <Upload className="h-4 w-4 text-white" />
-                <Input
-                  id="logo-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="hidden"
-                />
-              </label>
-            </div>
+            <label
+              htmlFor="logo-upload"
+              className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+              aria-label="Alterar logotipo da igreja"
+            >
+              <Upload className="h-4 w-4 text-white" />
+              <Input
+                id="logo-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+                aria-hidden="true"
+              />
+            </label>
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Dashboard de Membros</h1>
@@ -69,6 +77,7 @@ export const Header = () => {
           onClick={() => document.getElementById('logo-upload')?.click()}
           disabled={uploading}
           className="rounded-xl"
+          aria-label="Alterar logotipo da igreja"
         >
           <Upload className="h-4 w-4 mr-2" />
           {uploading ? 'Carregando...' : 'Alterar Logotipo'}

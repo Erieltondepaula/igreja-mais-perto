@@ -8,27 +8,25 @@ interface SummaryCardsProps {
 }
 
 export const SummaryCards = ({ members }: SummaryCardsProps) => {
+  // Filtra membros ativos apenas uma vez
   const activeMembers = members.filter(m => m.status !== 'desligado');
-  
+
+  // Pré-calcula idades para evitar múltiplas chamadas a calculateAge
+  const ages = activeMembers.map(m => calculateAge(m.dataNascimento));
+
   const stats = {
-    totalHomens: activeMembers.filter(m => m.sexo === 'M').length,
-    totalMulheres: activeMembers.filter(m => m.sexo === 'F').length,
-    totalCriancas: activeMembers.filter(m => calculateAge(m.dataNascimento) <= 12).length,
-    totalJovens: activeMembers.filter(m => {
-      const age = calculateAge(m.dataNascimento);
-      return age >= 13 && age <= 30;
-    }).length,
-    totalAdultos: activeMembers.filter(m => {
-      const age = calculateAge(m.dataNascimento);
-      return age >= 31 && age <= 60;
-    }).length,
-    totalIdosos: activeMembers.filter(m => calculateAge(m.dataNascimento) > 60).length,
+    totalHomens: activeMembers.filter((_, i) => activeMembers[i].sexo === 'M').length,
+    totalMulheres: activeMembers.filter((_, i) => activeMembers[i].sexo === 'F').length,
+    totalCriancas: ages.filter(age => age <= 12).length,
+    totalJovens: ages.filter(age => age >= 13 && age <= 30).length,
+    totalAdultos: ages.filter(age => age >= 31 && age <= 60).length,
+    totalIdosos: ages.filter(age => age > 60).length,
     totalBatizados: activeMembers.filter(m => m.batizado).length,
     totalNaoBatizados: activeMembers.filter(m => !m.batizado).length,
     semFuncao: activeMembers.filter(m => !m.lider && !m.professorEBQ).length,
   };
 
-  const percentualBatizados = activeMembers.length > 0 
+  const percentualBatizados = activeMembers.length > 0
     ? ((stats.totalBatizados / activeMembers.length) * 100).toFixed(1)
     : '0';
 

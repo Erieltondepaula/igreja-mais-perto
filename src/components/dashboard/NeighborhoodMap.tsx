@@ -11,9 +11,10 @@ interface NeighborhoodMapProps {
 
 export const NeighborhoodMap = ({ members, onNeighborhoodClick }: NeighborhoodMapProps) => {
   const neighborhoodData = getNeighborhoodData(members);
-  const maxCount = Math.max(...neighborhoodData.map(n => n.quantidade));
+  const maxCount = neighborhoodData.length > 0 ? Math.max(...neighborhoodData.map(n => n.quantidade)) : 0;
 
   const getIntensityColor = (count: number) => {
+    if (maxCount === 0) return 'bg-muted'; // evita divisão por zero
     const intensity = count / maxCount;
     if (intensity > 0.7) return 'bg-primary';
     if (intensity > 0.4) return 'bg-info';
@@ -32,33 +33,34 @@ export const NeighborhoodMap = ({ members, onNeighborhoodClick }: NeighborhoodMa
       <CardContent>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {neighborhoodData.map((neighborhood, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer ${getIntensityColor(neighborhood.quantidade)} ${
-                  getIntensityColor(neighborhood.quantidade) === 'bg-muted' 
-                    ? 'text-muted-foreground' 
-                    : 'text-white'
-                }`}
-                onClick={() => onNeighborhoodClick?.(neighborhood.bairro)}
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium truncate">{neighborhood.bairro}</h3>
-                  <Badge 
-                    variant="outline" 
-                    className={`${
-                      getIntensityColor(neighborhood.quantidade) === 'bg-muted'
-                        ? 'border-muted-foreground text-muted-foreground'
-                        : 'border-white text-white'
-                    }`}
-                  >
-                    {neighborhood.quantidade}
-                  </Badge>
+            {neighborhoodData.map((neighborhood) => {
+              const intensityColor = getIntensityColor(neighborhood.quantidade);
+              const isMuted = intensityColor === 'bg-muted';
+
+              return (
+                <div
+                  key={neighborhood.bairro}
+                  className={`p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer ${intensityColor} ${
+                    isMuted ? 'text-muted-foreground' : 'text-white'
+                  }`}
+                  onClick={() => onNeighborhoodClick?.(neighborhood.bairro)}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium truncate">{neighborhood.bairro}</h3>
+                    <Badge
+                      variant="outline"
+                      className={`${
+                        isMuted ? 'border-muted-foreground text-muted-foreground' : 'border-white text-white'
+                      }`}
+                    >
+                      {neighborhood.quantidade}
+                    </Badge>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          
+
           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-6">
             <span>Intensidade:</span>
             <div className="flex items-center gap-2">

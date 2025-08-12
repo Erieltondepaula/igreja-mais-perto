@@ -4,8 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Calendar, MapPin, Phone, Mail, User, Heart, Award, Upload, Users, GraduationCap, Crown } from 'lucide-react';
-import { calculateAge, formatStatus, getStatusColor } from '@/utils/memberUtils';
+import { Calendar, MapPin, Phone, Mail, User, Heart, Users, GraduationCap, Crown, Upload } from 'lucide-react';
+import { calculateAge, getStatusColor } from '@/utils/memberUtils';
 import { MemberEdit } from './MemberEdit';
 
 interface MemberDetailsProps {
@@ -16,7 +16,6 @@ interface MemberDetailsProps {
 export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) => {
   const [uploading, setUploading] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -24,14 +23,14 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
 
     setUploading(true);
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       const result = e.target?.result as string;
       const updatedMember = { ...member, photoUrl: result, updatedAt: new Date().toISOString() };
       onMemberUpdate(updatedMember);
       setUploading(false);
     };
-    
+
     reader.readAsDataURL(file);
   };
 
@@ -40,10 +39,6 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
       onMemberUpdate(updatedMember);
       setIsEditModalOpen(false);
     }
-  };
-
-  const handleEdit = () => {
-    setIsEditModalOpen(true);
   };
 
   return (
@@ -66,8 +61,8 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
               )}
               {onMemberUpdate && (
                 <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                  <label htmlFor="photo-upload" className="cursor-pointer">
-                    <Upload className="h-4 w-4 text-white" />
+                  <label htmlFor="photo-upload" className="cursor-pointer flex items-center gap-1 text-white">
+                    <Upload className="h-4 w-4" />
                     <Input
                       id="photo-upload"
                       type="file"
@@ -92,11 +87,13 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
             <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
               Informações Pessoais
             </h4>
-            
+
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                {new Date(member.dataNascimento).toLocaleDateString('pt-BR')} - {calculateAge(member.dataNascimento)} anos
+                {member.dataNascimento
+                  ? `${new Date(member.dataNascimento).toLocaleDateString('pt-BR')} - ${calculateAge(member.dataNascimento)} anos`
+                  : 'Data de nascimento não informada'}
                 {member.faixaEtaria && (
                   <Badge variant="outline" className="ml-2">
                     {member.faixaEtaria}
@@ -104,7 +101,7 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                 )}
               </span>
             </div>
-            
+
             {member.telefone && (
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
@@ -118,7 +115,7 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                 <span className="text-sm">{member.email}</span>
               </div>
             )}
-            
+
             {member.statusCivil && (
               <div className="flex items-center gap-2">
                 <Heart className="h-4 w-4 text-muted-foreground" />
@@ -141,13 +138,15 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
               <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
                 Endereço
               </h4>
-              
+
               <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                 <div className="text-sm">
-                  <div>{member.endereco}</div>
-                  <div>{member.bairro}, {member.cidade}</div>
-                  {member.estado && <div>{member.estado} - {member.cep}</div>}
+                  <div>{member.endereco || 'Endereço não informado'}</div>
+                  <div>{member.bairro || ''}{member.bairro && member.cidade ? ', ' : ''}{member.cidade || ''}</div>
+                  {(member.estado || member.cep) && (
+                    <div>{member.estado || ''}{member.estado && member.cep ? ' - ' : ''}{member.cep || ''}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -157,11 +156,11 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
               <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
                 Status e Funções
               </h4>
-              
+
               <div className="flex flex-wrap gap-2">
                 {/* Badge do status */}
-                <Badge 
-                  variant="outline" 
+                <Badge
+                  variant="outline"
                   style={{ color: getStatusColor(member.status) }}
                   className="rounded-xl"
                 >
@@ -216,7 +215,7 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                 <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
                   Pequeno Grupo
                 </h4>
-                
+
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
@@ -239,7 +238,10 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
             {/* Botões de ação */}
             {onMemberUpdate && (
               <div className="flex gap-2 pt-4 border-t">
-                <Button onClick={handleEdit} className="bg-blue-600 text-white hover:bg-blue-700 rounded-xl">
+                <Button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="bg-blue-600 text-white hover:bg-blue-700 rounded-xl"
+                >
                   Alterar
                 </Button>
               </div>
