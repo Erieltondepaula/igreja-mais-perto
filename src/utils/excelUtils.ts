@@ -50,6 +50,34 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
         
         const members: Partial<Member>[] = jsonData.map((row: any) => {
+          // Helpers
+          const normalize = (s: any): string => {
+            if (s === undefined || s === null) return '';
+            return String(s)
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .toLowerCase();
+          };
+
+          const findCell = (labels: string[]): any => {
+            // Try exact matches first
+            for (const label of labels) {
+              if (row[label] !== undefined) return row[label];
+            }
+            // Build normalized map once per row
+            const normMap: Record<string, any> = {};
+            for (const key of Object.keys(row)) {
+              normMap[normalize(key).replace(/[^a-z0-9]/g, '')] = row[key];
+            }
+            for (const label of labels) {
+              const key = normalize(label).replace(/[^a-z0-9]/g, '');
+              if (key in normMap) return normMap[key];
+            }
+            return undefined;
+          };
+
           // Função para converter data do Excel
           const convertExcelDate = (excelDate: any): string => {
             if (!excelDate) return '';
@@ -63,11 +91,16 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
           };
 
           // Parse de booleanos e status
-          const batizado: boolean = parseBoolean(row['Batizado ?'] ?? row['Batizado'] ?? row['batizado']);
-          const membro: boolean = parseBoolean(row['Membro?'] ?? row['Membro'] ?? row['membro']);
-          const statusCell = row['Status'] ?? row['status'] ?? row['Situação Atual'] ?? row['situacaoAtual'] ?? '';
+          const batizado: boolean = parseBoolean(findCell(['Batizado ?', 'Batizado?', 'batizado', 'Batizado']));
+          const membro: boolean = parseBoolean(findCell(['Membro?', 'Membro ?', 'membro', 'Membro']));
+          const statusCell = findCell(['Situação Atual', 'Situacao Atual', 'situacaoAtual']) ?? '';
           const statusNormalized = typeof statusCell === 'string' ? statusCell.trim().toLowerCase() : '';
           const status: Member['status'] = statusNormalized.includes('desligado') ? 'desligado' : 'ativo';
+
+          // Sexo (M/F) robusto
+          const sexoRaw = findCell(['Sexo', 'sexo']);
+          const sexoStr = String(sexoRaw ?? '').toLowerCase();
+          const sexo: Member['sexo'] = sexoStr.startsWith('m') ? 'M' : 'F';
 
           return {
             nome: row['NOME '] || row['Nome'] || row['nome'] || '',
@@ -75,7 +108,7 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
             dataNascimento: convertExcelDate(row['Data de Nascimento']) || row['dataNascimento'] || '',
             idade: row['Idade'] || row['idade'] || undefined,
             mes: row['Mês'] || row['mes'] || '',
-            sexo: (row['Sexo'] && String(row['Sexo']).toLowerCase().startsWith('m')) || row['sexo'] === 'M' ? 'M' : 'F',
+            sexo,
             telefone: row['Telefone'] || row['telefone'] || '',
             email: row['Email'] || row['email'] || '',
             endereco: (row['Rua'] || row['endereco'] || '') + (row['Nº'] ? `, ${row['Nº']}` : ''),
@@ -90,11 +123,11 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
             parentesco: row['Parentesco ( Pai ou Mãe caso seja menor de idade )'] || row['parentesco'] || '',
             batizado,
             membro,
-            situacaoAtual: row['Situação Atual'] || row['situacaoAtual'] || '',
-            lider: parseBoolean(row['É lider ?'] ?? row['É líder ?'] ?? row['lider']),
-            professorEBQ: parseBoolean(row['É Professor EBQ ?'] ?? row['professorEBQ']),
+            situacaoAtual: findCell(['Situação Atual', 'Situacao Atual', 'situacaoAtual']) || '',
+            lider: parseBoolean(findCell(['É lider ?', 'É líder ?', 'É líder?', 'É lider?', 'lider'])),
+            professorEBQ: parseBoolean(findCell(['É Professor EBQ ?', 'É Professor EBQ?', 'professorEBQ'])),
             faixaEtaria: row['Faixa Etária'] || row['faixaEtaria'] || '',
-            pequeno_grupo: parseBoolean(row['Está em um pequeno grupo ?'] ?? row['pequeno_grupo']),
+            pequeno_grupo: parseBoolean(findCell(['Está em um pequeno grupo ?', 'Está em um pequeno grupo?', 'pequeno_grupo'])),
             grupo: row['Em que grupo está ?'] || row['grupo'] || '',
             numero_domes: row['Numerodomes'] || row['numero_domes'] || undefined,
             observacoes: row['Observações'] || row['observacoes'] || undefined

@@ -2,6 +2,7 @@ import { Member } from '@/types/member';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, UserCheck, UserX, Crown, GraduationCap } from 'lucide-react';
+import { calculateAge } from '@/utils/memberUtils';
 
 interface QuickStatsProps {
   members: Member[];
@@ -20,22 +21,22 @@ export const QuickStats = ({ members }: QuickStatsProps) => {
   const women = members.filter(m => m.sexo === 'F').length;
   
   const children = members.filter(m => {
-    const age = new Date().getFullYear() - new Date(m.dataNascimento).getFullYear();
-    return age <= 12;
+    const age = calculateAge(m.dataNascimento);
+    return age >= 0 && age <= 12;
   }).length;
   
   const youth = members.filter(m => {
-    const age = new Date().getFullYear() - new Date(m.dataNascimento).getFullYear();
+    const age = calculateAge(m.dataNascimento);
     return age >= 13 && age <= 17;
   }).length;
   
   const adults = members.filter(m => {
-    const age = new Date().getFullYear() - new Date(m.dataNascimento).getFullYear();
+    const age = calculateAge(m.dataNascimento);
     return age >= 18 && age <= 59;
   }).length;
   
   const elderly = members.filter(m => {
-    const age = new Date().getFullYear() - new Date(m.dataNascimento).getFullYear();
+    const age = calculateAge(m.dataNascimento);
     return age >= 60;
   }).length;
 
