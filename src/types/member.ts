@@ -4,28 +4,28 @@ export interface Member {
   nomeCompleto?: string;
   photoUrl?: string;
   dataNascimento: string;
-  idade?: number;
-  mes?: string;
+  idade: number;
+  mes: string;
   sexo: 'M' | 'F';
   telefone: string;
-  email: string;
+  email?: string;
   endereco: string;
-  numero?: string;
+  rua: string;
+  numero: string;
   bairro: string;
   cidade: string;
-  estado?: string;
+  estado: string;
   cep: string;
-  status: 'ativo' | 'batizado' | 'membro' | 'desligado';
+  status: 'ativo' | 'desligado';
   statusCivil?: string;
   conjuge?: string;
   parentesco?: string;
-  batizado?: boolean;
-  membro?: boolean;
-  situacaoAtual?: string;
-  lider?: boolean;
-  professorEBQ?: boolean;
-  faixaEtaria?: string;
-  pequeno_grupo?: boolean;
+  batizado: boolean;
+  membro: boolean;
+  lider: boolean;
+  professorEBQ: boolean;
+  faixaEtaria: string;
+  pequeno_grupo: boolean;
   grupo?: string;
   numero_domes?: number;
   dataBatismo?: string;
@@ -57,12 +57,10 @@ export interface ChartData {
 export interface AgeGroupData {
   faixaEtaria: string;
   quantidade: number;
-  fill?: string;
+  fill?: string; // A cor é opcional, pois é adicionada depois
 }
 
 export interface NeighborhoodData {
   bairro: string;
   quantidade: number;
-  latitude?: number;
-  longitude?: number;
 }
