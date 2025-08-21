@@ -8,26 +8,26 @@ interface SummaryCardsProps {
 }
 
 export const SummaryCards = ({ members }: SummaryCardsProps) => {
-  // Filtra membros ativos apenas uma vez
-  const activeMembers = members.filter(m => m.status !== 'desligado');
+  // CORREÇÃO: Cálculos agora usam a lista completa de membros para consistência.
+  const ages = members.map(m => calculateAge(m.dataNascimento));
 
-  // Pré-calcula idades para evitar múltiplas chamadas a calculateAge
-  const ages = activeMembers.map(m => calculateAge(m.dataNascimento));
-
+  // CORREÇÃO: Faixas etárias ajustadas para corresponder às suas regras.
   const stats = {
-    totalHomens: activeMembers.filter((_, i) => activeMembers[i].sexo === 'M').length,
-    totalMulheres: activeMembers.filter((_, i) => activeMembers[i].sexo === 'F').length,
-    totalCriancas: ages.filter(age => age <= 12).length,
-    totalJovens: ages.filter(age => age >= 13 && age <= 30).length,
-    totalAdultos: ages.filter(age => age >= 31 && age <= 60).length,
-    totalIdosos: ages.filter(age => age > 60).length,
-    totalBatizados: activeMembers.filter(m => m.batizado).length,
-    totalNaoBatizados: activeMembers.filter(m => !m.batizado).length,
-    semFuncao: activeMembers.filter(m => !m.lider && !m.professorEBQ).length,
+    totalHomens: members.filter(m => m.sexo === 'M').length,
+    totalMulheres: members.filter(m => m.sexo === 'F').length,
+    totalInfancia: ages.filter(age => age <= 6).length,
+    totalCriancas: ages.filter(age => age >= 7 && age <= 10).length,
+    totalAdolescentes: ages.filter(age => age >= 11 && age <= 17).length,
+    totalJovens: ages.filter(age => age >= 18 && age <= 35).length,
+    totalAdultos: ages.filter(age => age >= 36 && age <= 59).length,
+    totalIdosos: ages.filter(age => age >= 60).length,
+    totalBatizados: members.filter(m => m.batizado).length,
+    totalNaoBatizados: members.length - members.filter(m => m.batizado).length,
+    semFuncao: members.filter(m => !m.lider && !m.professorEBQ).length,
   };
 
-  const percentualBatizados = activeMembers.length > 0
-    ? ((stats.totalBatizados / activeMembers.length) * 100).toFixed(1)
+  const percentualBatizados = members.length > 0
+    ? ((stats.totalBatizados / members.length) * 100).toFixed(1)
     : '0';
 
   return (
@@ -50,46 +50,33 @@ export const SummaryCards = ({ members }: SummaryCardsProps) => {
         </CardContent>
       </Card>
 
+      {/* Cards de faixa etária atualizados */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">👶 Crianças</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600">{stats.totalCriancas}</div>
-          <p className="text-xs text-muted-foreground">0-12 anos</p>
-        </CardContent>
+        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Infância</CardTitle></CardHeader>
+        <CardContent><div className="text-2xl font-bold">{stats.totalInfancia}</div><p className="text-xs text-muted-foreground">0-6 anos</p></CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Crianças</CardTitle></CardHeader>
+        <CardContent><div className="text-2xl font-bold">{stats.totalCriancas}</div><p className="text-xs text-muted-foreground">7-10 anos</p></CardContent>
+      </Card>
+       <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Adolescentes</CardTitle></CardHeader>
+        <CardContent><div className="text-2xl font-bold">{stats.totalAdolescentes}</div><p className="text-xs text-muted-foreground">11-17 anos</p></CardContent>
+      </Card>
+       <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Jovens</CardTitle></CardHeader>
+        <CardContent><div className="text-2xl font-bold">{stats.totalJovens}</div><p className="text-xs text-muted-foreground">18-35 anos</p></CardContent>
+      </Card>
+       <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Adultos</CardTitle></CardHeader>
+        <CardContent><div className="text-2xl font-bold">{stats.totalAdultos}</div><p className="text-xs text-muted-foreground">36-59 anos</p></CardContent>
+      </Card>
+       <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Idosos</CardTitle></CardHeader>
+        <CardContent><div className="text-2xl font-bold">{stats.totalIdosos}</div><p className="text-xs text-muted-foreground">60+ anos</p></CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">🧑 Jovens</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-orange-600">{stats.totalJovens}</div>
-          <p className="text-xs text-muted-foreground">13-30 anos</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">👨‍💼 Adultos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-purple-600">{stats.totalAdultos}</div>
-          <p className="text-xs text-muted-foreground">31-60 anos</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">👴 Idosos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-gray-600">{stats.totalIdosos}</div>
-          <p className="text-xs text-muted-foreground">60+ anos</p>
-        </CardContent>
-      </Card>
-
+      {/* Cards de Batismo e Função */}
       <Card className="md:col-span-2">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">⛪ Batismos</CardTitle>

@@ -93,7 +93,7 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
             </Label>
             <Select
               value={filters.statusGeral || 'all'}
-              onValueChange={value => handleFilterChange('statusGeral', value)}
+              onValueChange={value => handleFilterChange('statusGeral', value as 'ativo' | 'desligado')}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
@@ -212,6 +212,7 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
           </div>
         </div>
 
+        {/* SEÇÃO RESTAURADA ABAIXO */}
         <div className="space-y-3">
           <Label className="flex items-center gap-1">
             <Gift className="h-4 w-4" />
@@ -222,7 +223,7 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
               <Checkbox
                 id="aniversariantesDoMes"
                 checked={filters.aniversariantesDoMes || false}
-                onCheckedChange={checked => handleFilterChange('aniversariantesDoMes', checked)}
+                onCheckedChange={checked => handleFilterChange('aniversariantesDoMes', Boolean(checked))}
               />
               <Label htmlFor="aniversariantesDoMes" className="flex items-center gap-1">
                 <Gift className="h-4 w-4" />
@@ -234,7 +235,7 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
               <Checkbox
                 id="aniversariantesDoDia"
                 checked={filters.aniversariantesDoDia || false}
-                onCheckedChange={checked => handleFilterChange('aniversariantesDoDia', checked)}
+                onCheckedChange={checked => handleFilterChange('aniversariantesDoDia', Boolean(checked))}
               />
               <Label htmlFor="aniversariantesDoDia" className="flex items-center gap-1">
                 <Gift className="h-4 w-4" />

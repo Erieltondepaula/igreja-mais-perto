@@ -17,10 +17,13 @@ interface GenderData {
 }
 
 export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
-  const data: GenderData[] = getGenderChartData(members).map(item => ({
-    ...item,
-    fill: item.name === 'Masculino' ? '#3B82F6' : '#EC4899' // Azul para masculino, rosa para feminino
-  }));
+  const activeMembers = members.filter(m => m.status === 'ativo');
+  const data: GenderData[] = getGenderChartData(activeMembers);
+
+  const COLORS = {
+    Masculino: '#3B82F6', // Azul
+    Feminino: '#EC4899',   // Rosa
+  };
 
   const handleClick = (data: GenderData) => {
     if (onSegmentClick) {
@@ -31,14 +34,13 @@ export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
 
   const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload }) => {
     if (active && payload && payload.length) {
-      const data = payload[0];
-      const percentage = ((data.value / members.length) * 100).toFixed(1);
+      const item = payload[0];
+      const total = activeMembers.length > 0 ? activeMembers.length : 1;
+      const percentage = ((item.value! / total) * 100).toFixed(1);
       return (
         <div className="bg-card border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{data.name}</p>
-          <p className="text-primary">
-            {data.value} pessoas ({percentage}%)
-          </p>
+          <p className="font-medium">{item.name}</p>
+          <p className="text-primary">{item.value} pessoas ({percentage}%)</p>
         </div>
       );
     }
@@ -50,7 +52,7 @@ export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Distribuição por Sexo
+          Distribuição por Sexo (Ativos)
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -65,13 +67,13 @@ export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
                 outerRadius={100}
                 paddingAngle={5}
                 dataKey="value"
-                onClick={handleClick}
+                onClick={(payload) => handleClick(payload)}
                 className="cursor-pointer"
               >
-                {data.map((entry, index) => (
+                {data.map((entry) => (
                   <Cell
-                    key={`cell-${index}`}
-                    fill={entry.fill}
+                    key={`cell-${entry.name}`}
+                    fill={COLORS[entry.name as keyof typeof COLORS]}
                     className="hover:opacity-80 transition-opacity cursor-pointer"
                   />
                 ))}
@@ -82,13 +84,13 @@ export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
           </ResponsiveContainer>
         </div>
         <div className="grid grid-cols-2 gap-4 mt-4">
-          {data.map((item, index) => (
+          {data.map((item) => (
             <div
-              key={index}
+              key={item.name}
               className="text-center cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
               onClick={() => handleClick(item)}
             >
-              <div className="text-2xl font-bold" style={{ color: item.fill }}>
+              <div className="text-2xl font-bold" style={{ color: COLORS[item.name as keyof typeof COLORS] }}>
                 {item.value}
               </div>
               <div className="text-sm text-muted-foreground">{item.name}</div>

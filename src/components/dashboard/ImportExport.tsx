@@ -1,19 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Member } from '@/types/member';
-import { exportToExcel, importFromExcel } from '@/utils/excelUtils';
+import { importFromExcel, exportToExcel, REQUIRED_COLUMNS_MAP } from '@/utils/excelUtils';
 import { exportToPDF } from '@/utils/pdfUtils';
-import { Upload, Download, FileSpreadsheet, Database, AlertCircle, CheckCircle2, X, FileText } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, Database, AlertCircle, CheckCircle2, X, FileText, Link as LinkIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { MemberFilters } from '@/types/member';
-
-// Importação correta do XLSX usada apenas na função de template
 import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 interface ImportExportProps {
   members: Member[];
@@ -23,271 +21,200 @@ interface ImportExportProps {
   onReplaceAll: (members: Partial<Member>[]) => void;
 }
 
+const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRdZMkpYxYB5uydpPPPhJWL0uPyBa44JOWzSyDQxcKof3mAbfvOCk2c9nZOiOFkRz7convCRILjtzuH/pub?output=csv';
+
 export const ImportExport = ({ members, filteredMembers, filters, onImport, onReplaceAll }: ImportExportProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importing, setImporting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewData, setPreviewData] = useState<Partial<Member>[]>([]);
   const [showPreview, setShowPreview] = useState(false);
-
-  const handleExportAll = () => {
-    exportToExcel(members, 'todos-membros');
-    toast({
-      title: "Exportação concluída",
-      description: "Arquivo Excel baixado com sucesso!"
-    });
+  
+  const processAndPreview = async (data: Partial<Member>[]) => {
+      setPreviewData(data);
+      setShowPreview(true);
+      toast({
+        title: "Dados carregados com sucesso!",
+        description: `${data.length} registros encontrados. Revise os dados antes de importar.`
+      });
   };
-
+  
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    setImporting(true);
-    setUploadProgress(0);
-
+    setLoading(true);
+    setUploadProgress(30);
     try {
-      // Simula progresso enquanto importa o arquivo
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 100);
-
       const importedMembers = await importFromExcel(file);
-
-      clearInterval(progressInterval);
       setUploadProgress(100);
-
-      setPreviewData(importedMembers);
-      setShowPreview(true);
-
-      toast({
-        title: "Arquivo carregado com sucesso!",
-        description: `${importedMembers.length} registros encontrados. Revise os dados antes de importar.`
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao carregar arquivo",
-        description: "Não foi possível ler o arquivo. Verifique o formato.",
-        variant: "destructive"
-      });
+      await processAndPreview(importedMembers);
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
+        toast({ title: "Erro ao carregar arquivo", description: errorMessage, variant: "destructive" });
     } finally {
-      setImporting(false);
-      setTimeout(() => setUploadProgress(0), 2000);
+      setLoading(false);
+      setTimeout(() => setUploadProgress(0), 1000);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleGoogleSheetImport = async () => {
+    setLoading(true);
+    setUploadProgress(30);
+    toast({ title: "Buscando dados da planilha online..." });
+    try {
+        // Usando um proxy CORS mais estável
+        const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(GOOGLE_SHEET_CSV_URL)}`);
+        
+        if (!response.ok) {
+            throw new Error('Não foi possível acessar a planilha. Verifique se ela está publicada para a web.');
+        }
+        const csvText = await response.text();
+        if(csvText.trim().startsWith('<!DOCTYPE html>')) {
+            throw new Error('O link retornou uma página HTML em vez de dados. Verifique a URL da planilha.');
+        }
+        const blob = new Blob([csvText], { type: 'text/csv' });
+        const file = new File([blob], "google_sheet.csv", { type: "text/csv" });
+        const importedMembers = await importFromExcel(file);
+        setUploadProgress(100);
+        await processAndPreview(importedMembers);
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
+        toast({ title: "Erro ao importar do Google Sheets", description: errorMessage, variant: "destructive" });
+    } finally {
+        setLoading(false);
+        setTimeout(() => setUploadProgress(0), 1000);
     }
   };
 
   const confirmImport = (replaceAll: boolean = false) => {
     if (replaceAll) {
       onReplaceAll(previewData);
-      toast({
-        title: "Base de dados substituída",
-        description: `${previewData.length} membros carregados. Dados anteriores foram removidos.`
-      });
+      toast({ title: "Base de dados substituída!", description: `${previewData.length} registros foram carregados.` });
     } else {
       onImport(previewData);
-      toast({
-        title: "Membros adicionados",
-        description: `${previewData.length} novos membros adicionados à base existente.`
-      });
+      toast({ title: "Membros adicionados!", description: `${previewData.length} novos registros foram adicionados.` });
     }
     setShowPreview(false);
     setPreviewData([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
+  
+    const cancelImport = () => {
+        setShowPreview(false);
+        setPreviewData([]);
+    };
 
-  const cancelImport = () => {
-    setShowPreview(false);
-    setPreviewData([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+    const handleExportPDF = () => {
+        const membersToExport = filteredMembers ?? members;
+        exportToPDF(membersToExport, filters, 'relatorio-membros');
+    };
 
-  const handleExportPDF = () => {
-    const membersToExport = filteredMembers ?? members;
-    exportToPDF(membersToExport, filters, 'relatorio-membros');
-    toast({
-      title: "Exportação PDF concluída",
-      description: "Relatório PDF baixado com sucesso!"
-    });
-  };
-
-  const downloadTemplate = () => {
-    const template = [{
-      nome: 'Exemplo da Silva',
-      data_nascimento: '1990-01-01',
-      sexo: 'Masculino',
-      telefone: '(11) 99999-9999',
-      email: 'exemplo@email.com',
-      endereco: 'Rua Exemplo, 123',
-      bairro: 'Centro',
-      cidade: 'São Paulo',
-      cep: '01234-567',
-      status: 'ativo',
-      data_batismo: '',
-      data_membresia: '',
-      data_desligamento: '',
-      observacoes: ''
-    }];
-
-    const worksheet = XLSX.utils.json_to_sheet(template);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
-
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(data);
-    link.download = 'template-membros.xlsx';
-    link.click();
-
-    toast({
-      title: "Template baixado",
-      description: "Use este arquivo como modelo para importação!"
-    });
-  };
+    const downloadTemplate = () => {
+        const templateHeaders = Object.keys(REQUIRED_COLUMNS_MAP);
+        const template = [Object.fromEntries(templateHeaders.map(header => [header, '']))];
+        const worksheet = XLSX.utils.json_to_sheet(template);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(data, 'template-membros.xlsx');
+    };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="h-5 w-5" />
-          Upload e Análise de Base de Dados XLS
+          Importar e Exportar Dados
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Área de Upload */}
-        <div className="border-2 border-dashed border-border rounded-lg p-6">
-          <div className="text-center space-y-4">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <Upload className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-lg font-medium">Carregar Base de Dados</h3>
-              <p className="text-sm text-muted-foreground">
-                Faça upload do seu arquivo XLS para análise completa
-              </p>
-            </div>
-
-            <Input
-              id="upload-file"
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              disabled={importing}
-              ref={fileInputRef}
-              className="hidden"
-            />
-
-            <Button
-              size="lg"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={importing}
-              className="w-full max-w-xs"
-            >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button size="lg" onClick={() => fileInputRef.current?.click()} disabled={loading}>
               <Upload className="h-4 w-4 mr-2" />
-              {importing ? 'Carregando...' : 'Selecionar Arquivo XLS'}
+              {loading ? 'Processando...' : 'Carregar Arquivo (XLSX, CSV)'}
             </Button>
-
-            {uploadProgress > 0 && (
-              <div className="w-full max-w-xs mx-auto">
-                <Progress value={uploadProgress} className="w-full" />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {uploadProgress}% carregado
-                </p>
-              </div>
-            )}
-          </div>
+            <Button size="lg" onClick={handleGoogleSheetImport} disabled={loading} variant="outline">
+                <LinkIcon className="h-4 w-4 mr-2" />
+                {loading ? 'Sincronizando...' : 'Importar do Google Sheets'}
+            </Button>
         </div>
+        <Input
+            id="upload-file"
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleFileUpload}
+            disabled={loading}
+            ref={fileInputRef}
+            className="hidden"
+        />
+        {uploadProgress > 0 && (
+          <div className="w-full">
+            <Progress value={uploadProgress} className="w-full" />
+          </div>
+        )}
 
-        {/* Preview dos Dados */}
         {showPreview && (
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-4">
-                <div>
-                  <strong>Arquivo carregado com sucesso!</strong>
-                  <p className="text-sm mt-1">
-                    Encontrados {previewData.length} registros. Primeiros registros:
-                  </p>
-                </div>
+            <AlertTitle>Revisão da Importação</AlertTitle>
+            <AlertDescription className="space-y-4 mt-2">
+                <p className="text-sm">
+                  Encontrados {previewData.length} registros. Confira os 5 primeiros abaixo:
+                </p>
 
                 <div className="bg-muted/50 rounded p-3 text-xs space-y-1 max-h-32 overflow-y-auto">
                   {previewData.slice(0, 5).map((member, index) => (
-                    <div key={index} className="flex gap-4">
-                      <span className="font-medium">{member.nome}</span>
-                      <span>{member.sexo === 'M' ? 'Masc.' : 'Fem.'}</span>
-                      <span>{member.bairro}</span>
-                      <span>{member.status}</span>
+                    <div key={index} className="flex gap-4 p-1 border-b border-muted">
+                      <span className="font-medium w-1/3 truncate">{member.nome}</span>
+                      <span className="w-1/4 truncate">{member.bairro}</span>
+                      <span className="w-1/4 truncate">{member.status}</span>
+                      <span className="w-1/4 truncate">{member.batizado ? 'Batizado' : 'Não Bat.'}</span>
                     </div>
                   ))}
-                  {previewData.length > 5 && (
-                    <div className="text-muted-foreground">
-                      ... e mais {previewData.length - 5} registros
-                    </div>
-                  )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   <Button onClick={() => confirmImport(false)} size="sm">
                     <Upload className="h-3 w-3 mr-1" />
                     Adicionar aos Existentes
                   </Button>
-                  <Button onClick={() => confirmImport(true)} variant="outline" size="sm">
+                  <Button onClick={() => confirmImport(true)} variant="destructive" size="sm">
                     <Database className="h-3 w-3 mr-1" />
-                    Substituir Todos os Dados
+                    Substituir Base de Dados
                   </Button>
                   <Button onClick={cancelImport} variant="ghost" size="sm">
                     <X className="h-3 w-3 mr-1" />
                     Cancelar
                   </Button>
                 </div>
-              </div>
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Ações Rápidas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button onClick={handleExportAll} variant="outline" className="w-full">
+          <Button onClick={() => exportToExcel(members, 'membros-exportados')} variant="outline" className="w-full">
             <Download className="h-4 w-4 mr-2" />
-            Exportar Excel
+            Exportar para Excel
           </Button>
-
           <Button onClick={handleExportPDF} variant="outline" className="w-full">
             <FileText className="h-4 w-4 mr-2" />
-            Exportar PDF
+            Exportar para PDF
           </Button>
-
           <Button variant="outline" onClick={downloadTemplate} className="w-full">
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Baixar Template
           </Button>
         </div>
-
-        {/* Instruções */}
-        <div className="bg-muted/30 rounded-lg p-4">
-          <h4 className="font-medium mb-2 flex items-center gap-2">
+        
+        <Alert variant="default">
             <AlertCircle className="h-4 w-4" />
-            Formato do Arquivo
-          </h4>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p><strong>Colunas obrigatórias:</strong> nome, data_nascimento, sexo, bairro</p>
-            <p><strong>Data de nascimento:</strong> AAAA-MM-DD (ex: 1990-12-25)</p>
-            <p><strong>Sexo:</strong> "Masculino" ou "Feminino" (ou "M"/"F")</p>
-            <p><strong>Status:</strong> "ativo", "batizado", "membro" ou "desligado"</p>
-          </div>
-        </div>
+            <AlertTitle>Instruções</AlertTitle>
+            <AlertDescription className="text-xs">
+              Para importar, sua planilha deve conter as colunas obrigatórias: `nome`, `data_nascimento`, `sexo`, `bairro`, `situacao_atual`, `batizado`, `membro`.
+            </AlertDescription>
+        </Alert>
       </CardContent>
     </Card>
   );

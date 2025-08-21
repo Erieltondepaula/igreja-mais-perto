@@ -8,13 +8,11 @@ interface StatsCardsProps {
 }
 
 export const StatsCards = ({ members, onCardClick }: StatsCardsProps) => {
-  // Considera membros apenas os batizados
-  const membros = members.filter(m => m.batizado === true);
-  
+  // CORREÇÃO: Agora 'membros' considera todos os registros, não apenas os batizados.
   const stats = {
-    totalMembros: membros.length,
-    ativos: membros.filter(m => m.status === 'ativo').length,
-    desligados: membros.filter(m => m.status === 'desligado').length,
+    totalMembros: members.length,
+    ativos: members.filter(m => m.status === 'ativo').length,
+    desligados: members.filter(m => m.status === 'desligado').length,
   };
 
   const cards = [
@@ -30,14 +28,14 @@ export const StatsCards = ({ members, onCardClick }: StatsCardsProps) => {
       value: stats.ativos,
       icon: UserCheck,
       color: 'text-success',
-      status: 'ativo',
+      status: 'ativo' as 'ativo' | 'desligado', // Definindo o tipo explicitamente
     },
     {
       title: 'Desligados',
       value: stats.desligados,
       icon: UserX,
       color: 'text-muted-foreground',
-      status: 'desligado',
+      status: 'desligado' as 'ativo' | 'desligado', // Definindo o tipo explicitamente
     },
   ];
 

@@ -183,10 +183,15 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                           </Badge>
                         )}
                       </>
-                    ) : (
-                      // Não é membro (congregado e não batizado)
+                    ) : !member.batizado ? (
+                      // Não é membro e não batizado (Congregado)
                       <Badge variant="secondary" className="bg-yellow-300/20 text-yellow-700 rounded-xl">
-                        🟡 Congregado / Não Batizado
+                        🟡 Congregado
+                      </Badge>
+                    ) : (
+                      // Batizado mas não membro
+                       <Badge variant="secondary" className="bg-info/10 text-info rounded-xl">
+                        🔵 Batizado
                       </Badge>
                     )}
 
