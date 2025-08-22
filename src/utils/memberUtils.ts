@@ -1,18 +1,23 @@
 import { Member, MemberFilters, ChartData, AgeGroupData, NeighborhoodData } from '@/types/member';
 
-// CORREÇÃO: Função de cálculo de idade mais precisa para evitar erros de fuso horário.
+// **FUNÇÃO DE CÁLCULO DE IDADE CORRIGIDA E À PROVA DE FUTURO**
 export const calculateAge = (birthDate: string): number => {
   if (!birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return 0;
+  
   const today = new Date();
   const [year, month, day] = birthDate.split('-').map(Number);
-  // Usar UTC para evitar problemas de fuso horário
   const birth = new Date(Date.UTC(year, month - 1, day));
+
+  if (birth > today) {
+    return 0;
+  }
+
   let age = today.getUTCFullYear() - birth.getUTCFullYear();
   const monthDiff = today.getUTCMonth() - birth.getUTCMonth();
   if (monthDiff < 0 || (monthDiff === 0 && today.getUTCDate() < birth.getUTCDate())) {
     age--;
   }
-  return age;
+  return age < 0 ? 0 : age; // Garante que nunca retorne negativo
 };
 
 // Define a faixa etária com base na idade
@@ -39,25 +44,43 @@ export const isBirthdayToday = (birthDate: string): boolean => {
   return birth.getUTCMonth() === today.getUTCMonth() && birth.getUTCDate() === today.getUTCDate();
 };
 
-// Função de filtro
+// **Função de filtro ATUALIZADA com a sua nova lógica simplificada**
 export const filterMembers = (members: Member[], filters: MemberFilters): Member[] => {
   return members.filter(member => {
     if (filters.search && !member.nome.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    
+    // Filtro principal para Ativo/Desligado
     if (filters.statusGeral && member.status !== filters.statusGeral) return false;
+    
     if (filters.tipoMembro && filters.tipoMembro.length > 0) {
-        const isCongregado = !member.batizado && !member.membro;
-        const typeMatch = filters.tipoMembro.some(tipo => 
-            (tipo === 'batizado' && member.batizado) ||
-            (tipo === 'membro' && member.membro) ||
-            (tipo === 'congregado' && isCongregado)
-        );
+        if (member.status === 'desligado') {
+            return false;
+        }
+
+        const isMembro = member.batizado && member.membro;
+        const isCongregado = !member.batizado; // Simplificado: Se não é batizado, é congregado
+        const isBatizadoCongregado = member.batizado && !member.membro;
+
+        const typeMatch = filters.tipoMembro.some(tipo => {
+            if (tipo === 'membro' && isMembro) return true;
+            if (tipo === 'congregado' && isCongregado) return true;
+            if (tipo === 'batizado_congregado' && isBatizadoCongregado) return true;
+            return false;
+        });
         if (!typeMatch) return false;
     }
+
+    if (filters.aniversariantesDoMes) {
+        if(member.status !== 'ativo' || !isBirthdayInMonth(member.dataNascimento)) return false;
+    }
+    if (filters.aniversariantesDoDia) {
+        if(member.status !== 'ativo' || !isBirthdayToday(member.dataNascimento)) return false;
+    }
+
     if (filters.sexo && member.sexo !== filters.sexo) return false;
     if (filters.bairro && member.bairro !== filters.bairro) return false;
     if (filters.anoNascimento && new Date(member.dataNascimento).getFullYear().toString() !== filters.anoNascimento) return false;
-    if (filters.aniversariantesDoMes && !isBirthdayInMonth(member.dataNascimento)) return false;
-    if (filters.aniversariantesDoDia && !isBirthdayToday(member.dataNascimento)) return false;
+    
     return true;
   });
 };
@@ -89,7 +112,6 @@ export const getAgeGroupChartData = (members: Member[]): AgeGroupData[] => {
     else ageGroups['Idoso']++;
   });
   
-  // Adicionando a lógica de cores de volta
   return Object.entries(ageGroups).map(([faixaEtaria, quantidade], index) => ({
     faixaEtaria,
     quantidade,
@@ -97,7 +119,24 @@ export const getAgeGroupChartData = (members: Member[]): AgeGroupData[] => {
   }));
 };
 
-// *** FUNÇÃO RESTAURADA ***
+// **Função ATUALIZADA para definir o "tipo" de membro para exibição**
+export const getMemberType = (member: Member): string => {
+    if (member.status === 'desligado') return 'Desligado';
+    if (member.batizado && member.membro) return 'Membro';
+    if (member.batizado && !member.membro) return 'Batizado Congregado';
+    return 'Congregado';
+};
+
+// Função para retornar a cor do status
+export const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'ativo': return 'hsl(var(--success))';
+    case 'desligado': return 'hsl(var(--muted-foreground))';
+    default: return 'hsl(var(--foreground))';
+  }
+};
+
+// Função para dados do mapa de bairros
 export const getNeighborhoodData = (members: Member[]): NeighborhoodData[] => {
     const activeMembers = members.filter(m => m.status === 'ativo');
     const neighborhoods = new Map<string, number>();
@@ -110,21 +149,4 @@ export const getNeighborhoodData = (members: Member[]): NeighborhoodData[] => {
     return Array.from(neighborhoods.entries())
         .map(([bairro, quantidade]) => ({ bairro, quantidade }))
         .sort((a, b) => b.quantidade - a.quantidade);
-};
-
-// Define o "tipo" de membro para exibição
-export const getMemberType = (member: Member): string => {
-    if (member.status === 'desligado') return 'Desligado';
-    if (member.membro) return 'Membro';
-    if (member.batizado) return 'Batizado';
-    return 'Congregado';
-};
-
-// *** FUNÇÃO RESTAURADA ***
-export const getStatusColor = (status: string): string => {
-  switch (status) {
-    case 'ativo': return 'hsl(var(--success))';
-    case 'desligado': return 'hsl(var(--muted-foreground))';
-    default: return 'hsl(var(--foreground))';
-  }
 };

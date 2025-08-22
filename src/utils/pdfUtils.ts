@@ -1,46 +1,80 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Member } from '@/types/member';
+import { Member, MemberFilters } from '@/types/member';
 import { calculateAge, getMemberType } from './memberUtils';
+
+// Função para criar um título dinâmico com base nos filtros
+const generateReportTitle = (filters: MemberFilters): string => {
+  const baseTitle = "Relatório de Membros";
+  const descriptions: string[] = [];
+
+  // Adiciona o status (Ativo/Desligado)
+  if (filters.statusGeral) {
+    descriptions.push(filters.statusGeral === 'ativo' ? 'Ativos' : 'Desligados');
+  }
+
+  // Adiciona os tipos de membro selecionados
+  if (filters.tipoMembro && filters.tipoMembro.length > 0) {
+    const tipos = filters.tipoMembro.map(t => {
+        switch(t) {
+            case 'membro': return 'Membros';
+            case 'batizado_congregado': return 'Batizados (Congregados)';
+            case 'congregado': return 'Congregados';
+            default: return '';
+        }
+    }).filter(Boolean).join(', ');
+    if (tipos) descriptions.push(tipos);
+  }
+
+  // Adiciona os filtros de aniversariantes
+  if (filters.aniversariantesDoMes) {
+    descriptions.push("Aniversariantes do Mês");
+  }
+  if (filters.aniversariantesDoDia) {
+    descriptions.push("Aniversariantes de Hoje");
+  }
+
+  // Se algum filtro foi aplicado, monta o título com a descrição
+  if (descriptions.length > 0) {
+    return `${baseTitle}: ${descriptions.join(' e ')}`;
+  }
+
+  // Título padrão se nenhum filtro for aplicado
+  return `${baseTitle} - Listagem Geral`;
+};
+
 
 export const exportToPDF = (
   members: Member[], 
-  filters: any = {},
+  filters: MemberFilters = {}, 
   filename: string = 'relatorio-membros'
 ) => {
   const doc = new jsPDF();
   
-  // Determinar o título do relatório baseado nos filtros
-  let titulo = 'Relatório de Membros da Igreja Batista em Vila Palestina';
-  
-  if (filters.statusGeral === 'desligado') {
-    titulo = 'Relatório de Membros Desligados da Igreja Batista em Vila Palestina';
-  } else if (filters.tipoMembro?.includes('congregado') && !filters.tipoMembro?.includes('membro')) {
-    titulo = 'Relatório de Congregados da Igreja Batista em Vila Palestina';
-  }
-  
-  // Cabeçalho
+  const titulo = generateReportTitle(filters);
+  const totalText = `Total de Registros: ${members.length}`;
+  const generatedDate = `Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 14;
+
+  // Título principal (Centralizado)
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  
-  // Quebrar o título em múltiplas linhas se necessário
-  const splitTitle = doc.splitTextToSize(titulo, 180);
+  const splitTitle = doc.splitTextToSize(titulo, pageWidth - margin * 2);
   let yPosition = 20;
+  doc.text(splitTitle, pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += (splitTitle.length * 7);
   
-  splitTitle.forEach((line: string) => {
-    doc.text(line, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-    yPosition += 7;
-  });
-  
-  // Data de geração
+  // Informações do relatório (Alinhado à esquerda)
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, doc.internal.pageSize.getWidth() / 2, yPosition + 5, { align: 'center' });
+  doc.text(generatedDate, margin, yPosition);
+  doc.text(totalText, margin, yPosition + 5);
   
   // Preparar dados da tabela
   const tableData = members.map(member => [
     member.nome,
-    new Date(member.dataNascimento).toLocaleDateString('pt-BR'),
+    member.dataNascimento ? new Date(member.dataNascimento).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A',
     calculateAge(member.dataNascimento).toString(),
     member.status === 'ativo' ? 'Ativo' : 'Desligado',
     getMemberType(member)
@@ -50,35 +84,21 @@ export const exportToPDF = (
   autoTable(doc, {
     head: [['Nome', 'Data Nascimento', 'Idade', 'Status', 'Tipo']],
     body: tableData,
-    startY: yPosition + 15,
+    startY: yPosition + 15, 
     styles: {
       fontSize: 8,
       cellPadding: 3,
     },
     headStyles: {
-      fillColor: [41, 128, 185],
+      fillColor: [41, 128, 185], // Azul
       textColor: 255,
       fontStyle: 'bold'
     },
     alternateRowStyles: {
-      fillColor: [245, 245, 245]
+      fillColor: [245, 245, 245] // Cinza claro
     },
     margin: { top: 30, left: 10, right: 10 }
   });
-  
-  // Adicionar rodapé
-  const pageCount = doc.internal.pages.length - 1;
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.text(
-      `Total de registros: ${members.length} | Página ${i} de ${pageCount}`,
-      doc.internal.pageSize.getWidth() / 2,
-      doc.internal.pageSize.getHeight() - 10,
-      { align: 'center' }
-    );
-  }
-  
-  // Salvar o arquivo
+
   doc.save(`${filename}.pdf`);
 };
