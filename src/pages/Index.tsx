@@ -1,10 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Member, MemberFilters } from '@/types/member';
 import { mockMembers } from '@/data/mockMembers';
-import { filterMembers } from '@/utils/memberUtils';
+import { filterMembers, calculateAge } from '@/utils/memberUtils';
 import { Header } from '@/components/dashboard/Header';
 import { StatsCards } from '@/components/dashboard/StatsCards';
-import { QuickStats } from '@/components/dashboard/QuickStats';
+import { SummaryCards } from '@/components/dashboard/SummaryCards';
 import { MemberFilters as MemberFiltersComponent } from '@/components/dashboard/MemberFilters';
 import { MemberList } from '@/components/dashboard/MemberList';
 import { GenderChart } from '@/components/dashboard/GenderChart';
@@ -21,46 +21,53 @@ const Index = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (members.length === 0) {
-      console.log("Iniciando com dados mockados pois o localStorage está vazio.");
+    if (localStorage.getItem('church-members') === null) {
       setMembers(mockMembers);
     }
-  }, []); // Executa apenas uma vez na montagem inicial
+  }, []);
 
   const filteredMembers = useMemo(() => {
     return filterMembers(members, filters);
   }, [members, filters]);
 
+  const activeMembers = useMemo(() => members.filter(m => m.status === 'ativo'), [members]);
+
+  const ageDistribution = useMemo(() => {
+    const distribution = {
+      infancia: 0,
+      criancas: 0,
+      adolescentes: 0,
+      jovens: 0,
+      adultos: 0,
+      idosos: 0,
+    };
+    activeMembers.forEach(m => {
+      const age = calculateAge(m.dataNascimento);
+      if (age <= 6) distribution.infancia++;
+      else if (age <= 10) distribution.criancas++;
+      else if (age <= 17) distribution.adolescentes++;
+      else if (age <= 35) distribution.jovens++;
+      else if (age <= 59) distribution.adultos++;
+      else distribution.idosos++;
+    });
+    return distribution;
+  }, [activeMembers]);
+
+
   const handleFiltersChange = (newFilters: MemberFilters) => {
     setFilters(newFilters);
-    
-    if ((newFilters.aniversariantesDoMes || newFilters.aniversariantesDoDia) && memberListRef.current) {
-      setTimeout(() => {
-        memberListRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start' 
-        });
-      }, 100);
-    }
   };
 
   const handleCardClick = (statusGeral?: 'ativo' | 'desligado') => {
     const newFilters = statusGeral ? { statusGeral } : {};
     setFilters(newFilters);
-    
-    setTimeout(() => {
-      memberListRef.current?.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
-    }, 100);
+    memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-
+  
+  // **LÓGICA CORRIGIDA para não apagar outros filtros**
   const handleChartClick = (key: keyof MemberFilters, value: string) => {
-    setFilters({ [key]: value });
-     setTimeout(() => {
-      memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    setFilters(prevFilters => ({ ...prevFilters, [key]: value }));
+    memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleImport = (importedMembers: Partial<Member>[]) => {
@@ -72,6 +79,7 @@ const Index = () => {
     })) as Member[];
 
     setMembers(prevMembers => [...prevMembers, ...newMembers]);
+    toast({ title: "Membros adicionados com sucesso!" });
   };
 
   const handleReplaceAll = (importedMembers: Partial<Member>[]) => {
@@ -81,17 +89,16 @@ const Index = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     })) as Member[];
-
     setMembers(newMembers);
+    toast({ title: "Base de dados substituída com sucesso!" });
   };
 
   const handleMemberUpdate = (updatedMember: Member) => {
     setMembers(prevMembers => 
       prevMembers.map(member => 
-        member.id === updatedMember.id ? { ...updatedMember, updatedAt: new Date().toISOString() } : member
+        member.id === updatedMember.id ? updatedMember : member
       )
     );
-    toast({ title: "Membro atualizado com sucesso!" });
   };
 
   return (
@@ -107,7 +114,7 @@ const Index = () => {
 
         <StatsCards members={members} onCardClick={handleCardClick} />
 
-        <QuickStats members={members} />
+        <SummaryCards members={activeMembers} ageDistribution={ageDistribution} />
 
         <ImportExport 
           members={members} 
@@ -124,8 +131,8 @@ const Index = () => {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <GenderChart members={members} onSegmentClick={(sexo) => handleChartClick('sexo', sexo)} />
-          <AgeChart members={members} onBarClick={(faixa) => handleChartClick('faixaEtaria', faixa)} />
+          <GenderChart members={activeMembers} onSegmentClick={(sexo) => handleChartClick('sexo', sexo)} />
+          <AgeChart members={activeMembers} onBarClick={(faixa) => handleChartClick('faixaEtaria', faixa)} />
         </div>
 
         <div ref={memberListRef}>
@@ -136,7 +143,7 @@ const Index = () => {
           />
         </div>
 
-        <NeighborhoodMap members={members} onNeighborhoodClick={(bairro) => handleChartClick('bairro', bairro)} />
+        <NeighborhoodMap members={activeMembers} onNeighborhoodClick={(bairro) => handleChartClick('bairro', bairro)} />
       </div>
     </div>
   );
