@@ -171,6 +171,7 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
           </div>
         </div>
 
+        {/* ** ÁREA DE FILTROS SIMPLIFICADA ** */}
         <div className="space-y-3">
           <Label className="flex items-center gap-1">
             <CheckSquare className="h-4 w-4" />
@@ -179,23 +180,23 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="tipoBatizado"
-                checked={getCheckboxState('batizado')}
-                onCheckedChange={checked => handleTipoMembroChange('batizado', checked as boolean)}
-              />
-              <Label htmlFor="tipoBatizado" className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>🔵 Batizados
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
                 id="tipoMembro"
                 checked={getCheckboxState('membro')}
                 onCheckedChange={checked => handleTipoMembroChange('membro', checked as boolean)}
               />
               <Label htmlFor="tipoMembro" className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-blue-700 rounded-full"></span>🔷 Membros
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="tipoBatizadoCongregado"
+                checked={getCheckboxState('batizado_congregado')}
+                onCheckedChange={checked => handleTipoMembroChange('batizado_congregado', checked as boolean)}
+              />
+              <Label htmlFor="tipoBatizadoCongregado" className="flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>🟢 Batizados (Congregados)
               </Label>
             </div>
 
@@ -212,7 +213,6 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
           </div>
         </div>
 
-        {/* SEÇÃO RESTAURADA ABAIXO */}
         <div className="space-y-3">
           <Label className="flex items-center gap-1">
             <Gift className="h-4 w-4" />

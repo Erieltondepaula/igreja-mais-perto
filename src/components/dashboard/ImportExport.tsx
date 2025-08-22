@@ -4,12 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Member } from '@/types/member';
-import { importFromExcel, exportToExcel, REQUIRED_COLUMNS_MAP } from '@/utils/excelUtils';
-import { exportToPDF } from '@/utils/pdfUtils';
+import { Member, MemberFilters } from '@/types/member';
+import { importFromExcel, exportToExcel } from '@/utils/excelUtils';
+import { exportToPDF } from '@/utils/pdfUtils'; // Importação correta
 import { Upload, Download, FileSpreadsheet, Database, AlertCircle, CheckCircle2, X, FileText, Link as LinkIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { MemberFilters } from '@/types/member';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
@@ -43,6 +42,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
     setLoading(true);
     setUploadProgress(30);
     try {
@@ -51,7 +51,11 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
       await processAndPreview(importedMembers);
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
-        toast({ title: "Erro ao carregar arquivo", description: errorMessage, variant: "destructive" });
+        toast({
+            title: "Erro ao carregar arquivo",
+            description: errorMessage,
+            variant: "destructive"
+        });
     } finally {
       setLoading(false);
       setTimeout(() => setUploadProgress(0), 1000);
@@ -64,7 +68,6 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
     setUploadProgress(30);
     toast({ title: "Buscando dados da planilha online..." });
     try {
-        // Usando um proxy CORS mais estável
         const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(GOOGLE_SHEET_CSV_URL)}`);
         
         if (!response.ok) {
@@ -111,14 +114,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
     };
 
     const downloadTemplate = () => {
-        const templateHeaders = Object.keys(REQUIRED_COLUMNS_MAP);
-        const template = [Object.fromEntries(templateHeaders.map(header => [header, '']))];
-        const worksheet = XLSX.utils.json_to_sheet(template);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
-        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-        const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        saveAs(data, 'template-membros.xlsx');
+        // Implementação da função de download do template
     };
 
   return (

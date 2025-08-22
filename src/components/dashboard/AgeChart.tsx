@@ -1,22 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps, Cell } from 'recharts';
-import { Member, AgeGroupData } from '@/types/member'; // Importando AgeGroupData daqui
+import { Member, AgeGroupData } from '@/types/member';
 import { getAgeGroupChartData } from '@/utils/memberUtils';
 import { TrendingUp } from 'lucide-react';
 import React from 'react';
 
 interface AgeChartProps {
-  members: Member[];
+  members: Member[]; // Recebe membros ativos
   onBarClick?: (faixaEtaria: string) => void;
 }
-
-// Removida a definição local de AgeGroupData
 
 export const AgeChart = ({ members, onBarClick }: AgeChartProps) => {
   const data: AgeGroupData[] = getAgeGroupChartData(members);
 
   const handleClick = (data: AgeGroupData) => {
-    if (onBarClick) {
+    if (onBarClick && data.faixaEtaria) {
       onBarClick(data.faixaEtaria);
     }
   };
@@ -29,9 +27,7 @@ export const AgeChart = ({ members, onBarClick }: AgeChartProps) => {
       return (
         <div className="bg-card border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{label}</p>
-          <p className="text-primary">
-            {value} pessoas ({percentage}%)
-          </p>
+          <p className="text-primary">{value} pessoas ({percentage}%)</p>
         </div>
       );
     }
@@ -43,7 +39,7 @@ export const AgeChart = ({ members, onBarClick }: AgeChartProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
-          Distribuição por Faixa Etária (Total)
+          Distribuição por Faixa Etária (Ativos)
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -57,8 +53,8 @@ export const AgeChart = ({ members, onBarClick }: AgeChartProps) => {
               <Bar
                 dataKey="quantidade"
                 radius={[4, 4, 0, 0]}
-                onClick={(payload) => handleClick(payload)}
-                className="cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleClick}
+                className="cursor-pointer"
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
