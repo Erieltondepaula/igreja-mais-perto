@@ -1,15 +1,39 @@
 import * as XLSX from 'xlsx';
+import { Member, MemberFilters } from '@/types/member';
 
-export function filterMembers(members, filters) {
-  // ...implementação...
+export function filterMembers(members: Member[], filters: MemberFilters): Member[] {
+  return members.filter(member => {
+    if (filters.sexo && member.sexo !== filters.sexo) return false;
+    if (filters.bairro && member.bairro !== filters.bairro) return false;
+    if (filters.faixaEtaria && member.faixaEtaria !== filters.faixaEtaria) return false;
+    if (filters.statusGeral && member.status !== filters.statusGeral) return false;
+    return true;
+  });
 }
 
-export function mockMembers() {
-  // ...implementação...
+export function mockMembers(): Member[] {
+  return [];
 }
 
-export function calculateAge(dateString) {
-  // ...implementação...
+export function calculateAge(dateString: string): number {
+  if (!dateString) return 0;
+  const birthDate = new Date(dateString);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+export function getAgeGroup(age: number): string {
+  if (age <= 6) return 'infancia';
+  if (age <= 10) return 'criancas';
+  if (age <= 17) return 'adolescentes';
+  if (age <= 35) return 'jovens';
+  if (age <= 59) return 'adultos';
+  return 'idosos';
 }
 
 const normalizeHeader = (header: string): string => {

@@ -11,34 +11,54 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Member, MemberFromDB, MemberFilters } from '@/types/member';
 import { filterMembers, mockMembers, calculateAge } from '@/utils/excelUtils';
-import Header from '@/components/dashboard/Header';
+import { Header } from '@/components/dashboard/Header';
 
 const API_URL = 'http://localhost:5001/api/members';
 
 const Index = () => {
   const [members, setMembers] = useLocalStorage<Member[]>('church-members', []);
   const [filters, setFilters] = useState<MemberFilters>({});
-  const toast = useToast();
+  const { toast } = useToast();
   const memberListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchMembers = async () => {
-      const response = await fetch(API_URL);
-      const data: MemberFromDB[] = await response.json();
-      const formattedData: Member[] = data.map((item) => ({
-        ...item,
-        id: item._id,
-      }));
-      setMembers(formattedData);
+      try {
+        const response = await fetch(API_URL);
+        const data: MemberFromDB[] = await response.json();
+        const formattedData: Member[] = data.map((item) => ({
+          ...item,
+          id: item._id,
+        }));
+        setMembers(formattedData);
+      } catch (error) {
+        console.error('Error fetching members:', error);
+      }
+    };
+    fetchMembers();
+  }, [setMembers]);
+
+  const activeMembers = useMemo(() => {
+    return members.filter(m => m.status !== 'desligado');
+  }, [members]);
+
+  const ageDistribution = useMemo(() => {
+    const distribution = { infancia: 0, criancas: 0, adolescentes: 0, jovens: 0, adultos: 0, idosos: 0 };
+    activeMembers.forEach(m => {
       const age = calculateAge(m.dataNascimento);
       if (age <= 6) distribution.infancia++;
       else if (age <= 10) distribution.criancas++;
       else if (age <= 17) distribution.adolescentes++;
       else if (age <= 35) distribution.jovens++;
       else if (age <= 59) distribution.adultos++;
-    };
-    fetchMembers();
-  }, [members, setMembers]);
+      else distribution.idosos++;
+    });
+    return distribution;
+  }, [activeMembers]);
+
+  const filteredMembers = useMemo(() => {
+    return filterMembers(activeMembers, filters);
+  }, [activeMembers, filters]);
 
   const handleFiltersChange = (newFilters: MemberFilters) => {
     setFilters(newFilters);
@@ -89,14 +109,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
-        <Header />
+        <Header members={members} onCardClick={handleCardClick} />
         <div className="text-center">
           <p className="text-xl text-muted-foreground">
             Sistema de gestão e controle de cadastro de membros
           </p>
         </div>
         <StatsCards members={members} onCardClick={handleCardClick} />
-        <SummaryCards members={activeMembers} ageDistribution={ageDistribution} />
+        <SummaryCards ageDistribution={ageDistribution} onAgeGroupClick={(faixa) => handleChartClick('faixaEtaria', faixa)} />
         <ImportExport 
           members={members} 
           filteredMembers={filteredMembers}
@@ -116,7 +136,6 @@ const Index = () => {
         <div ref={memberListRef}>
           <MemberList 
             members={filteredMembers} 
-            filters={filters} 
             onMemberUpdate={handleMemberUpdate}
           />
         </div>

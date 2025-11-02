@@ -1,158 +1,313 @@
-<<<<<<< HEAD
-// Local do arquivo: src/components/dashboard/MemberList.tsx
+import { useState, useMemo } from 'react';<<<<<<< HEAD
 
-import { useState } from 'react';
-import { Member } from '@/types/member';
-=======
-import { useState, useMemo } from 'react';
-import { Member, MemberFilters } from '@/types/member';
->>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
+import { Member } from '@/types/member';// Local do arquivo: src/components/dashboard/MemberList.tsx
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';import { useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';import { Member } from '@/types/member';
+
+import { Button } from '@/components/ui/button';=======
+
+import { Eye, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';import { useState, useMemo } from 'react';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';import { Member, MemberFilters } from '@/types/member';
+
+import { MemberDetails } from './MemberDetails';>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
+
+import { MemberEdit } from './MemberEdit';import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+import { calculateAge, getMemberType } from '@/utils/memberUtils';import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-<<<<<<< HEAD
-import { Eye, ArrowUpDown, ArrowUp, ArrowDown, Edit, RefreshCw } from 'lucide-react';
-=======
+
+interface MemberListProps {import { Button } from '@/components/ui/button';
+
+  members: Member[];<<<<<<< HEAD
+
+  onMemberUpdate: (member: Member) => void;import { Eye, ArrowUpDown, ArrowUp, ArrowDown, Edit, RefreshCw } from 'lucide-react';
+
+}=======
+
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
->>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MemberDetails } from './MemberDetails';
-import { MemberEdit } from './MemberEdit';
-import { calculateAge, getMemberType } from '@/utils/memberUtils';
 
-<<<<<<< HEAD
-// ✅ NOVAS PROPRIEDADES PARA RECEBER O ESTADO DA ORDENAÇÃO
-interface MemberListProps {
-  members: Member[];
-  onMemberUpdate: (member: Member) => void;
-  onRefresh: () => void;
-  sortField: keyof Member | 'idade' | 'tipo' | null;
-  sortDirection: 'asc' | 'desc';
-  onSort: (field: keyof Member | 'idade' | 'tipo') => void;
-}
+export const MemberList = ({ members, onMemberUpdate }: MemberListProps) => {import { Eye, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
-const MemberTypeBadge = ({ type }: { type: string }) => {
-  const getVariantClass = () => {
-    switch (type) {
-      case 'Membro':
-        return 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100';
-      case 'Batizado Congregado':
-        return 'text-blue-600 font-semibold';
-      case 'Congregado':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100';
-      case 'Desligado':
-        return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100';
-    }
-  };
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
 
-  if (type === 'Batizado Congregado') {
-    return <span className={getVariantClass()}>{type}</span>
-  }
-  
-  return <Badge className={getVariantClass()}>{type}</Badge>;
-};
+  const [editingMember, setEditingMember] = useState<Member | null>(null);import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sortDirection, onSort }: MemberListProps) => {
-=======
-interface MemberListProps {
-  members: Member[];
-  filters: MemberFilters;
-  onMemberUpdate: (member: Member) => void;
-}
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);import { MemberDetails } from './MemberDetails';
 
-export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps) => {
->>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [editingMember, setEditingMember] = useState<Member | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-<<<<<<< HEAD
+  const [isEditOpen, setIsEditOpen] = useState(false);import { MemberEdit } from './MemberEdit';
 
-  // ❌ LÓGICA DE ORDENAÇÃO E ESTADO REMOVIDOS DESTE COMPONENTE
-=======
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<string | null>('nome');
+  const [sortField, setSortField] = useState<string | null>('nome');import { calculateAge, getMemberType } from '@/utils/memberUtils';
+
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const handleSort = (field: string) => {
-    const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
-    setSortField(field);
-    setSortDirection(newDirection);
-  };
+<<<<<<< HEAD
 
-  const sortedMembers = useMemo(() => {
-    if (!sortField) return members;
+  const handleSort = (field: string) => {// ✅ NOVAS PROPRIEDADES PARA RECEBER O ESTADO DA ORDENAÇÃO
+
+    const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';interface MemberListProps {
+
+    setSortField(field);  members: Member[];
+
+    setSortDirection(newDirection);  onMemberUpdate: (member: Member) => void;
+
+  };  onRefresh: () => void;
+
+  sortField: keyof Member | 'idade' | 'tipo' | null;
+
+  const sortedMembers = useMemo(() => {  sortDirection: 'asc' | 'desc';
+
+    if (!sortField) return members;  onSort: (field: keyof Member | 'idade' | 'tipo') => void;
+
+}
 
     return [...members].sort((a, b) => {
-      const aValue = a[sortField as keyof Member] || '';
-      const bValue = b[sortField as keyof Member] || '';
 
-      if (sortField === 'idade') {
-        const ageA = calculateAge(a.dataNascimento);
-        const ageB = calculateAge(b.dataNascimento);
-        return sortDirection === 'asc' ? ageA - ageB : ageB - ageA;
-      }
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue) 
-          : bValue.localeCompare(aValue);
-      }
+      const aValue = a[sortField as keyof Member] || '';const MemberTypeBadge = ({ type }: { type: string }) => {
+
+      const bValue = b[sortField as keyof Member] || '';  const getVariantClass = () => {
+
+    switch (type) {
+
+      if (sortField === 'idade') {      case 'Membro':
+
+        const ageA = calculateAge(a.dataNascimento);        return 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100';
+
+        const ageB = calculateAge(b.dataNascimento);      case 'Batizado Congregado':
+
+        return sortDirection === 'asc' ? ageA - ageB : ageB - ageA;        return 'text-blue-600 font-semibold';
+
+      }      case 'Congregado':
+
+              return 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100';
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {      case 'Desligado':
+
+        return sortDirection === 'asc'         return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100';
+
+          ? aValue.localeCompare(bValue)       default:
+
+          : bValue.localeCompare(aValue);        return 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100';
+
+      }    }
+
+  };
 
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [members, sortField, sortDirection]);
->>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
 
-  const getSortIcon = (field: string) => {
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;  if (type === 'Batizado Congregado') {
+
+      return 0;    return <span className={getVariantClass()}>{type}</span>
+
+    });  }
+
+  }, [members, sortField, sortDirection]);  
+
+  return <Badge className={getVariantClass()}>{type}</Badge>;
+
+  const getSortIcon = (field: string) => {};
+
     if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground" />;
-    return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
-  };
-<<<<<<< HEAD
-=======
 
-  const handleSelectAll = (checked: boolean) => {
-    setSelectedMembers(checked ? sortedMembers.map(m => m.id) : []);
-  };
+    return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sortDirection, onSort }: MemberListProps) => {
 
-  const handleSelectMember = (memberId: string, checked: boolean) => {
-    setSelectedMembers(prev => 
-      checked ? [...prev, memberId] : prev.filter(id => id !== memberId)
-    );
-  };
->>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
+  };=======
+
+  interface MemberListProps {
+
+  const handleViewDetails = (member: Member) => {  members: Member[];
+
+    setSelectedMember(member);  filters: MemberFilters;
+
+    setIsDetailsOpen(true);  onMemberUpdate: (member: Member) => void;
+
+  };}
+
   
-  const handleViewDetails = (member: Member) => {
-    setSelectedMember(member);
-    setIsDetailsOpen(true);
-  };
-<<<<<<< HEAD
 
-  const handleEditClick = (member: Member) => {
-    setEditingMember(member);
-    setIsEditOpen(true);
-  };
-=======
->>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
-  
-  const handleSaveEdit = (updatedMember: Member) => {
-    onMemberUpdate(updatedMember);
-    setIsEditOpen(false);
-<<<<<<< HEAD
-    setEditingMember(null);
-=======
->>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
-  };
+  const handleSaveEdit = (updatedMember: Member) => {export const MemberList = ({ members, filters, onMemberUpdate }: MemberListProps) => {
 
-  return (
+    onMemberUpdate(updatedMember);>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
+
+    setIsEditOpen(false);  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+
+    setEditingMember(null);  const [editingMember, setEditingMember] = useState<Member | null>(null);
+
+  };  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  return (<<<<<<< HEAD
+
     <Card className="rounded-xl shadow-md">
-      <CardHeader>
+
+      <CardHeader>  // ❌ LÓGICA DE ORDENAÇÃO E ESTADO REMOVIDOS DESTE COMPONENTE
+
+        <div className="flex justify-between items-center">=======
+
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+
+            Lista de Membros ({sortedMembers.length})  const [sortField, setSortField] = useState<string | null>('nome');
+
+          </CardTitle>  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+        </div>
+
+      </CardHeader>  const handleSort = (field: string) => {
+
+      <CardContent>    const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
+
+        <div className="overflow-x-auto">    setSortField(field);
+
+          <Table>    setSortDirection(newDirection);
+
+            <TableHeader>  };
+
+              <TableRow>
+
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('nome')}>  const sortedMembers = useMemo(() => {
+
+                  <div className="flex items-center gap-1">Nome {getSortIcon('nome')}</div>    if (!sortField) return members;
+
+                </TableHead>
+
+                <TableHead>Data de Nascimento</TableHead>    return [...members].sort((a, b) => {
+
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('idade')}>      const aValue = a[sortField as keyof Member] || '';
+
+                  <div className="flex items-center gap-1">Idade {getSortIcon('idade')}</div>      const bValue = b[sortField as keyof Member] || '';
+
+                </TableHead>
+
+                <TableHead>Tipo</TableHead>      if (sortField === 'idade') {
+
+                <TableHead>Status</TableHead>        const ageA = calculateAge(a.dataNascimento);
+
+                <TableHead>Ações</TableHead>        const ageB = calculateAge(b.dataNascimento);
+
+              </TableRow>        return sortDirection === 'asc' ? ageA - ageB : ageB - ageA;
+
+            </TableHeader>      }
+
+            <TableBody>      
+
+              {sortedMembers.map(member => (      if (typeof aValue === 'string' && typeof bValue === 'string') {
+
+                <TableRow key={member.id}>        return sortDirection === 'asc' 
+
+                  <TableCell className="font-medium">{member.nome || 'N/A'}</TableCell>          ? aValue.localeCompare(bValue) 
+
+                  <TableCell>{member.dataNascimento ? new Date(member.dataNascimento + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A'}</TableCell>          : bValue.localeCompare(aValue);
+
+                  <TableCell>{calculateAge(member.dataNascimento)} anos</TableCell>      }
+
+                  <TableCell>
+
+                    <Badge variant="outline">{getMemberType(member)}</Badge>      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+
+                  </TableCell>      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+
+                  <TableCell>      return 0;
+
+                    <Badge variant={member.status === 'ativo' ? 'default' : 'secondary'}>    });
+
+                      {member.status === 'ativo' ? 'Ativo' : 'Desligado'}  }, [members, sortField, sortDirection]);
+
+                    </Badge>>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
+
+                  </TableCell>
+
+                  <TableCell>  const getSortIcon = (field: string) => {
+
+                    <div className="flex gap-2">    if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground" />;
+
+                      <Button    return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+
+                        variant="ghost"  };
+
+                        size="icon"<<<<<<< HEAD
+
+                        onClick={() => handleViewDetails(member)}=======
+
+                        className="rounded-full h-8 w-8"
+
+                      >  const handleSelectAll = (checked: boolean) => {
+
+                        <Eye className="h-4 w-4" />    setSelectedMembers(checked ? sortedMembers.map(m => m.id) : []);
+
+                      </Button>  };
+
+                    </div>
+
+                  </TableCell>  const handleSelectMember = (memberId: string, checked: boolean) => {
+
+                </TableRow>    setSelectedMembers(prev => 
+
+              ))}      checked ? [...prev, memberId] : prev.filter(id => id !== memberId)
+
+            </TableBody>    );
+
+          </Table>  };
+
+        </div>>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
+
+  
+
+        {sortedMembers.length === 0 && (  const handleViewDetails = (member: Member) => {
+
+          <div className="text-center py-8 text-muted-foreground">    setSelectedMember(member);
+
+            Nenhum membro encontrado com os filtros aplicados.    setIsDetailsOpen(true);
+
+          </div>  };
+
+        )}<<<<<<< HEAD
+
+
+
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>  const handleEditClick = (member: Member) => {
+
+          <DialogContent className="max-w-3xl rounded-xl shadow-md">    setEditingMember(member);
+
+            <DialogHeader>    setIsEditOpen(true);
+
+              <DialogTitle>Detalhes do Membro</DialogTitle>  };
+
+            </DialogHeader>=======
+
+            {selectedMember && <MemberDetails member={selectedMember} onMemberUpdate={onMemberUpdate} />}>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
+
+          </DialogContent>  
+
+        </Dialog>  const handleSaveEdit = (updatedMember: Member) => {
+
+    onMemberUpdate(updatedMember);
+
+        <MemberEdit    setIsEditOpen(false);
+
+          member={editingMember}<<<<<<< HEAD
+
+          isOpen={isEditOpen}    setEditingMember(null);
+
+          onClose={() => setIsEditOpen(false)}=======
+
+          onSave={handleSaveEdit}>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
+
+        />  };
+
+      </CardContent>
+
+    </Card>  return (
+
+  );    <Card className="rounded-xl shadow-md">
+
+};      <CardHeader>
+
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
 <<<<<<< HEAD
