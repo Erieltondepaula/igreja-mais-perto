@@ -10,7 +10,8 @@ import { ImportExport } from '@/components/dashboard/ImportExport';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Member, MemberFromDB, MemberFilters } from '@/types/member';
-import { filterMembers, mockMembers, calculateAge } from '@/utils/excelUtils';
+import { filterMembers, calculateAge } from '@/utils/memberUtils';
+import { mockMembers } from '@/data/mockMembers';
 import { Header } from '@/components/dashboard/Header';
 
 const API_URL = 'http://localhost:5001/api/members';
@@ -18,6 +19,8 @@ const API_URL = 'http://localhost:5001/api/members';
 const Index = () => {
   const [members, setMembers] = useLocalStorage<Member[]>('church-members', []);
   const [filters, setFilters] = useState<MemberFilters>({});
+  const [sortField, setSortField] = useState<keyof Member | 'idade' | 'tipo' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
   const memberListRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +62,30 @@ const Index = () => {
   const filteredMembers = useMemo(() => {
     return filterMembers(activeMembers, filters);
   }, [activeMembers, filters]);
+
+  const handleSort = (field: keyof Member | 'idade' | 'tipo') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data: MemberFromDB[] = await response.json();
+      const formattedData: Member[] = data.map((item) => ({
+        ...item,
+        id: item._id || '',
+      }));
+      setMembers(formattedData);
+      toast({ title: 'Dados atualizados com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+    }
+  };
 
   const handleFiltersChange = (newFilters: MemberFilters) => {
     setFilters(newFilters);
@@ -137,6 +164,10 @@ const Index = () => {
           <MemberList 
             members={filteredMembers} 
             onMemberUpdate={handleMemberUpdate}
+            onRefresh={handleRefresh}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
           />
         </div>
         <NeighborhoodMap members={activeMembers} onNeighborhoodClick={(bairro) => handleChartClick('bairro', bairro)} />
