@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 // Local do arquivo: src/components/dashboard/MemberDetails.tsx
 
+=======
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
 import { useState } from 'react';
 import { Member } from '@/types/member';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,7 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar, MapPin, Phone, Mail, User, Heart, Users, GraduationCap, Crown, Upload } from 'lucide-react';
+<<<<<<< HEAD
 import { calculateAge, getStatusColor, getMemberType } from '@/utils/memberUtils';
+=======
+import { calculateAge, getStatusColor } from '@/utils/memberUtils';
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
 import { MemberEdit } from './MemberEdit';
 
 interface MemberDetailsProps {
@@ -50,10 +57,17 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
         <CardContent className="p-4">
           <div className="flex items-center space-x-3 mb-4">
             <div className="relative">
+<<<<<<< HEAD
               {member.avatar_url ? (
                 <img
                   src={member.avatar_url}
                   alt={member.nome}
+=======
+              {member.photoUrl ? (
+                <img
+                  src={member.photoUrl}
+                  alt="Foto do Membro"
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
                   className="w-20 h-20 rounded-full object-cover border-2 border-primary"
                 />
               ) : (
@@ -94,7 +108,11 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
                 {member.dataNascimento
+<<<<<<< HEAD
                   ? `${new Date(member.dataNascimento + 'T00:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - ${calculateAge(member.dataNascimento)} anos`
+=======
+                  ? `${new Date(member.dataNascimento).toLocaleDateString('pt-BR')} - ${calculateAge(member.dataNascimento)} anos`
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
                   : 'Data de nascimento não informada'}
                 {member.faixaEtaria && (
                   <Badge variant="outline" className="ml-2">
@@ -160,6 +178,10 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
               </h4>
 
               <div className="flex flex-wrap gap-2">
+<<<<<<< HEAD
+=======
+                {/* Badge do status */}
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
                 <Badge
                   variant="outline"
                   style={{ color: getStatusColor(member.status) }}
@@ -167,6 +189,7 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                 >
                   {member.status === 'ativo' ? '🟢 Ativo' : '⚪ Desligado'}
                 </Badge>
+<<<<<<< HEAD
                 <Badge variant="secondary" className="rounded-xl">{getMemberType(member)}</Badge>
                 {member.lider && (
                   <Badge variant="secondary" className="bg-warning/10 text-warning-foreground rounded-xl flex items-center">
@@ -179,10 +202,75 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                     <GraduationCap className="h-3 w-3 mr-1" />
                     Professor EBQ
                   </Badge>
+=======
+
+                {/* Mostrar badges extras apenas se não estiver desligado */}
+                {member.status !== 'desligado' && (
+                  <>
+                    {/* Se for membro */}
+                    {member.membro ? (
+                      <>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary rounded-xl flex items-center">
+                          <Users className="h-3 w-3 mr-1" />
+                          🔷 Membro
+                        </Badge>
+                        {member.batizado && (
+                          <Badge variant="secondary" className="bg-info/10 text-info rounded-xl">
+                            🔵 Batizado
+                          </Badge>
+                        )}
+                      </>
+                    ) : !member.batizado ? (
+                      // Não é membro e não batizado (Congregado)
+                      <Badge variant="secondary" className="bg-yellow-300/20 text-yellow-700 rounded-xl">
+                        🟡 Congregado
+                      </Badge>
+                    ) : (
+                      // Batizado mas não membro
+                       <Badge variant="secondary" className="bg-info/10 text-info rounded-xl">
+                        🔵 Batizado
+                      </Badge>
+                    )}
+
+                    {/* Funções específicas */}
+                    {member.lider && (
+                      <Badge variant="secondary" className="bg-warning/10 text-warning-foreground rounded-xl flex items-center">
+                        <Crown className="h-3 w-3 mr-1" />
+                        Líder
+                      </Badge>
+                    )}
+
+                    {member.professorEBQ && (
+                      <Badge variant="secondary" className="bg-accent/10 text-accent-foreground rounded-xl flex items-center">
+                        <GraduationCap className="h-3 w-3 mr-1" />
+                        Professor EBQ
+                      </Badge>
+                    )}
+                  </>
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
                 )}
               </div>
             </div>
 
+<<<<<<< HEAD
+=======
+            {/* Pequeno Grupo */}
+            {member.pequeno_grupo && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                  Pequeno Grupo
+                </h4>
+
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    {member.grupo || 'Sem grupo definido'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
             {/* Observações */}
             {member.observacoes && (
               <div className="space-y-3">

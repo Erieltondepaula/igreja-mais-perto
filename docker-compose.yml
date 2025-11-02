@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🚀 MIGRAÇÃO PARA POSTGRESQL
 ## Configuração do PostgreSQL via Docker Compose
 
@@ -45,4 +46,53 @@ volumes:
 
 networks:
   dashboard_network:
+=======
+# 🚀 MIGRAÇÃO PARA POSTGRESQL
+## Configuração do PostgreSQL via Docker Compose
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: dashboard_membros_db
+    restart: always
+    environment:
+      POSTGRES_USER: membros_user
+      POSTGRES_PASSWORD: membros_password_2025
+      POSTGRES_DB: dashboard_membros
+      # Configurações de performance
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=pt_BR.UTF-8 --lc-ctype=pt_BR.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      # 📁 Persistência de dados
+      - postgres_data:/var/lib/postgresql/data
+      # 🔧 Scripts de inicialização
+      - ./database/init:/docker-entrypoint-initdb.d/
+    networks:
+      - dashboard_network
+
+  # 🔧 Opcional: pgAdmin para administração visual
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: dashboard_membros_admin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@dashboard.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - dashboard_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  dashboard_network:
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
     driver: bridge

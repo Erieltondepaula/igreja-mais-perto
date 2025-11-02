@@ -1,10 +1,17 @@
+<<<<<<< HEAD
 // Local do arquivo: src/types/member.ts
 
+=======
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
 export interface Member {
   id: string;
   nome: string;
   nomeCompleto?: string;
+<<<<<<< HEAD
   avatar_url?: string; // Caminho da foto/avatar do membro
+=======
+  photoUrl?: string;
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
   dataNascimento: string;
   idade: number;
   mes: string;
@@ -38,8 +45,11 @@ export interface Member {
   updatedAt: string;
 }
 
+<<<<<<< HEAD
 export type MemberFromDB = Omit<Member, 'id'> & { _id: string; };
 
+=======
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
 export interface MemberFilters {
   statusGeral?: 'ativo' | 'desligado';
   tipoMembro?: string[];
@@ -47,12 +57,17 @@ export interface MemberFilters {
   bairro?: string;
   faixaEtaria?: string;
   anoNascimento?: string;
+<<<<<<< HEAD
   idadeRange?: { min?: string; max?: string; };
   aniversariantesDoMes?: boolean;
   aniversariantesDoDia?: boolean;
   lider?: boolean;
   professorEBQ?: boolean;
   aniversariantesPeriodo?: { dataInicial?: string; dataFinal?: string; };
+=======
+  aniversariantesDoMes?: boolean;
+  aniversariantesDoDia?: boolean;
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
   search?: string;
 }
 
@@ -65,12 +80,17 @@ export interface ChartData {
 export interface AgeGroupData {
   faixaEtaria: string;
   quantidade: number;
+<<<<<<< HEAD
   fill?: string;
+=======
+  fill?: string; // A cor é opcional, pois é adicionada depois
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
 }
 
 export interface NeighborhoodData {
   bairro: string;
   quantidade: number;
+<<<<<<< HEAD
 }
 
 // ✅ ATUALIZADO: Adicionamos 'color' e 'task'
@@ -81,4 +101,6 @@ export interface CalendarEvent {
   type: 'birthday' | 'event' | 'task';
   description?: string;
   color?: string;
+=======
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
 }

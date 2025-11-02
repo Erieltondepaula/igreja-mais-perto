@@ -6,7 +6,11 @@ import { TrendingUp } from 'lucide-react';
 import React from 'react';
 
 interface AgeChartProps {
+<<<<<<< HEAD
   members: Member[];
+=======
+  members: Member[]; // Recebe membros ativos
+>>>>>>> d40cf2ed0fd887f2355535dfcd58873dffe4130a
   onBarClick?: (faixaEtaria: string) => void;
 }
 
