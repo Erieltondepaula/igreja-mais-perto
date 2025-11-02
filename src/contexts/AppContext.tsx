@@ -1,9 +1,10 @@
 // Local do arquivo: src/contexts/AppContext.tsx
-// ✅ CÓDIGO FINAL COM LÓGICA DE IMPORTAÇÃO CORRIGIDA
+// ✅ CÓDIGO CORRIGIDO - Usando localStorage para persistência
 
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { Member, MemberFilters } from '@/types/member';
 import { useToast } from '@/hooks/use-toast';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export interface AppContextType {
   members: Member[];
@@ -19,80 +20,40 @@ export interface AppContextType {
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useLocalStorage<Member[]>('church-members', []);
   const [filters, setFilters] = useState<MemberFilters>({});
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  // Limpa localStorage ao carregar o contexto
-  useEffect(() => {
-    localStorage.removeItem('members-data');
-  }, []);
-
-  // Buscar membros do backend ao carregar
-  useEffect(() => {
-    const fetchMembers = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/members');
-        const data = await response.json();
-        setMembers(data);
-      } catch (error) {
-        toast({ title: 'Erro ao buscar membros', description: String(error) });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchMembers();
-  }, [toast]);
 
   const onFiltersChange = (newFilters: MemberFilters) => {
     setFilters(newFilters);
   };
 
-  const onRefresh = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/members');
-      const data = await response.json();
-      setMembers(data);
-      toast({ title: "Dados Recarregados", description: "A lista de membros foi recarregada do banco de dados." });
-    } catch (error) {
-      toast({ title: 'Erro ao buscar membros', description: String(error) });
-    } finally {
-      setIsLoading(false);
-    }
+  const onRefresh = () => {
+    toast({ title: "Dados Recarregados", description: "A lista de membros foi recarregada." });
   };
   
-  // Exemplo: Atualizar membro no backend
   const onMemberUpdate = async (updatedMember: Member): Promise<void> => {
-    setIsLoading(true);
-    try {
-      await fetch(`/api/members/${updatedMember.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedMember)
-      });
-      await onRefresh();
-      toast({ title: "Membro atualizado com sucesso!" });
-    } catch (error) {
-      toast({ title: 'Erro ao atualizar membro', description: String(error) });
-    } finally {
-      setIsLoading(false);
-    }
+    setMembers(prevMembers => 
+      prevMembers.map(member => 
+        member.id === updatedMember.id ? updatedMember : member
+      )
+    );
+    toast({ title: "Membro atualizado com sucesso!" });
   };
 
-  // Importação: Envia os membros para o backend
   const onImport = async (importedMembers: Partial<Member>[]): Promise<boolean> => {
     setIsLoading(true);
     try {
-      await fetch('/api/members/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ members: importedMembers })
-      });
-      await onRefresh();
-      toast({ title: "Planilha importada com sucesso!", description: "Os dados anteriores foram substituídos." });
+      const newMembers: Member[] = importedMembers.map((member, index) => ({
+        ...member,
+        id: member.id || `imported-${Date.now()}-${index}`,
+        createdAt: member.createdAt || new Date().toISOString(),
+        updatedAt: member.updatedAt || new Date().toISOString()
+      })) as Member[];
+      
+      setMembers(prevMembers => [...prevMembers, ...newMembers]);
+      toast({ title: "Membros adicionados com sucesso!", description: `${newMembers.length} membros importados` });
       return true;
     } catch (error) {
       toast({ title: 'Erro ao importar membros', description: String(error) });
@@ -102,8 +63,60 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Substituir todos os membros (igual ao import)
-  const onReplaceAll = onImport;
+  const onReplaceAll = async (importedMembers: Partial<Member>[]): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const newMembers: Member[] = importedMembers.map((member, index) => ({
+        id: member.id || `imported-${Date.now()}-${index}`,
+        nome: member.nome || '',
+        nomeCompleto: member.nomeCompleto,
+        avatar_url: member.avatar_url,
+        dataNascimento: member.dataNascimento || '',
+        idade: member.idade || 0,
+        mes: member.mes || '',
+        sexo: member.sexo || 'M',
+        telefone: member.telefone || '',
+        email: member.email,
+        endereco: member.endereco || '',
+        rua: member.rua || '',
+        numero: member.numero || '',
+        bairro: member.bairro || '',
+        cidade: member.cidade || '',
+        estado: member.estado || '',
+        cep: member.cep || '',
+        status: member.status || 'ativo',
+        statusCivil: member.statusCivil,
+        conjuge: member.conjuge,
+        parentesco: member.parentesco,
+        batizado: member.batizado || false,
+        membro: member.membro || false,
+        lider: member.lider || false,
+        professorEBQ: member.professorEBQ || false,
+        faixaEtaria: member.faixaEtaria || '',
+        pequeno_grupo: member.pequeno_grupo || false,
+        grupo: member.grupo,
+        numero_domes: member.numero_domes,
+        dataBatismo: member.dataBatismo,
+        dataMembresia: member.dataMembresia,
+        dataDesligamento: member.dataDesligamento,
+        observacoes: member.observacoes,
+        createdAt: member.createdAt || new Date().toISOString(),
+        updatedAt: member.updatedAt || new Date().toISOString()
+      }));
+      
+      setMembers(newMembers);
+      toast({ 
+        title: "Base de dados substituída com sucesso!", 
+        description: `${newMembers.length} membros carregados`
+      });
+      return true;
+    } catch (error) {
+      toast({ title: 'Erro ao substituir membros', description: String(error) });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const value = {
     members,

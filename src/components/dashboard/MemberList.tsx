@@ -54,24 +54,15 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Ordena membros alfabeticamente A-Z por padrão
-  const sortedMembers = useMemo(() => {
-    return [...members].sort((a, b) => {
-      const nameA = (a.nome || '').toLowerCase();
-      const nameB = (b.nome || '').toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
-  }, [members]);
-
-  // Calcula total de páginas
-  const totalPages = Math.ceil(sortedMembers.length / ITEMS_PER_PAGE);
+  // ✅ Usa os membros já ordenados que vêm do componente pai
+  const totalPages = Math.ceil(members.length / ITEMS_PER_PAGE);
 
   // Pega membros da página atual
   const paginatedMembers = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    return sortedMembers.slice(startIndex, endIndex);
-  }, [sortedMembers, currentPage]);
+    return members.slice(startIndex, endIndex);
+  }, [members, currentPage]);
 
   // Reseta para página 1 quando total de páginas muda
   if (currentPage > totalPages && totalPages > 0) {
@@ -104,7 +95,7 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-            Lista de Membros ({sortedMembers.length} registros) 
+            Lista de Membros ({members.length} registros) 
             {totalPages > 1 && (
               <span className="text-sm font-normal text-muted-foreground">
                 - Página {currentPage} de {totalPages}
@@ -122,7 +113,9 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
           <Table>
             <TableHeader>
               <TableRow>
-                 {/* ✅ CABEÇALHOS AGORA CHAMAM A FUNÇÃO 'onSort' DO COMPONENTE PAI */}
+                {/* ✅ CABEÇALHO PARA FOTO */}
+                <TableHead className="w-12"></TableHead>
+                {/* ✅ CABEÇALHOS AGORA CHAMAM A FUNÇÃO 'onSort' DO COMPONENTE PAI */}
                 <TableHead className="cursor-pointer" onClick={() => onSort('nome')}>
                   <div className="flex items-center gap-1">Nome {getSortIcon('nome')}</div>
                 </TableHead>
@@ -145,28 +138,35 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
               {/* ✅ EXIBE APENAS OS MEMBROS DA PÁGINA ATUAL */}
               {paginatedMembers.map(member => (
                 <TableRow key={member.id}>
-                  <TableCell>
+                  {/* ✅ COLUNA DA FOTO */}
+                  <TableCell className="w-12">
                     {member.avatar_url ? (
                       <img
                         src={member.avatar_url}
                         alt={member.nome}
-                        className="w-8 h-8 rounded-full object-cover mr-2 inline-block"
+                        className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-200 mr-2 inline-block flex items-center justify-center text-gray-400">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
                         <span className="text-xs">?</span>
                       </div>
                     )}
                   </TableCell>
+                  {/* ✅ COLUNA DO NOME */}
                   <TableCell className="font-medium">{member.nome || 'N/A'}</TableCell>
+                  {/* ✅ COLUNA DA DATA DE NASCIMENTO */}
                   <TableCell>{member.dataNascimento ? new Date(member.dataNascimento + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A'}</TableCell>
+                  {/* ✅ COLUNA DA IDADE */}
                   <TableCell>{calculateAge(member.dataNascimento)} anos</TableCell>
+                  {/* ✅ COLUNA DO TIPO */}
                   <TableCell><MemberTypeBadge type={getMemberType(member)} /></TableCell>
+                  {/* ✅ COLUNA DO STATUS */}
                   <TableCell>
                     <Badge variant={member.status === 'ativo' ? 'default' : 'secondary'}>
                       {member.status === 'ativo' ? 'Ativo' : 'Desligado'}
                     </Badge>
                   </TableCell>
+                  {/* ✅ COLUNA DAS AÇÕES */}
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleViewDetails(member)}><Eye className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => handleEditClick(member)}><Edit className="h-4 w-4" /></Button>
@@ -181,7 +181,7 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-2 py-4 border-t">
             <div className="text-sm text-muted-foreground">
-              Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, sortedMembers.length)} de {sortedMembers.length} registros
+              Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, members.length)} de {members.length} registros
             </div>
             <div className="flex items-center gap-2">
               <Button

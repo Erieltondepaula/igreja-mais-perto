@@ -6,7 +6,7 @@ import { ImportExport } from '@/components/dashboard/ImportExport';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Member, MemberFromDB, MemberFilters } from '@/types/member';
-import { filterMembers, calculateAge } from '@/utils/memberUtils';
+import { filterMembers, calculateAge, getMemberType } from '@/utils/memberUtils';
 import { mockMembers } from '@/data/mockMembers';
 
 const API_URL = 'http://localhost:5001/api/members';
@@ -63,6 +63,40 @@ const Index = () => {
     return filterMembers(activeMembers, filters);
   }, [activeMembers, filters]);
 
+  // ✅ MEMBROS ORDENADOS - Aplica ordenação aos membros filtrados
+  const sortedAndFilteredMembers = useMemo(() => {
+    if (!sortField) return filteredMembers;
+    
+    return [...filteredMembers].sort((a, b) => {
+      let valueA: string | number | boolean | undefined;
+      let valueB: string | number | boolean | undefined;
+      
+      if (sortField === 'idade') {
+        valueA = calculateAge(a.dataNascimento);
+        valueB = calculateAge(b.dataNascimento);
+      } else if (sortField === 'tipo') {
+        valueA = getMemberType(a);
+        valueB = getMemberType(b);
+      } else if (sortField === 'dataNascimento') {
+        // Para data de nascimento: mais recente (maior data) = mais novo
+        valueA = new Date(a.dataNascimento || '1900-01-01').getTime();
+        valueB = new Date(b.dataNascimento || '1900-01-01').getTime();
+      } else {
+        valueA = a[sortField];
+        valueB = b[sortField];
+      }
+      
+      // Ordenação
+      if (valueA === valueB) return 0;
+      
+      if (sortDirection === 'asc') {
+        return valueA > valueB ? 1 : -1;
+      } else {
+        return valueA < valueB ? 1 : -1;
+      }
+    });
+  }, [filteredMembers, sortField, sortDirection]);
+
   const handleSort = (field: keyof Member | 'idade' | 'tipo') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -105,11 +139,42 @@ const Index = () => {
 
   const handleImport = (importedMembers: Partial<Member>[]) => {
     const newMembers: Member[] = importedMembers.map((member, index) => ({
-      ...member,
-      id: `imported-${Date.now()}-${index}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    })) as Member[];
+      id: member.id || `imported-${Date.now()}-${index}`,
+      nome: member.nome || '',
+      nomeCompleto: member.nomeCompleto,
+      avatar_url: member.avatar_url,
+      dataNascimento: member.dataNascimento || '',
+      idade: member.idade || 0,
+      mes: member.mes || '',
+      sexo: member.sexo || 'M',
+      telefone: member.telefone || '',
+      email: member.email,
+      endereco: member.endereco || '',
+      rua: member.rua || '',
+      numero: member.numero || '',
+      bairro: member.bairro || '',
+      cidade: member.cidade || '',
+      estado: member.estado || '',
+      cep: member.cep || '',
+      status: member.status || 'ativo',
+      statusCivil: member.statusCivil,
+      conjuge: member.conjuge,
+      parentesco: member.parentesco,
+      batizado: member.batizado || false,
+      membro: member.membro || false,
+      lider: member.lider || false,
+      professorEBQ: member.professorEBQ || false,
+      faixaEtaria: member.faixaEtaria || '',
+      pequeno_grupo: member.pequeno_grupo || false,
+      grupo: member.grupo,
+      numero_domes: member.numero_domes,
+      dataBatismo: member.dataBatismo,
+      dataMembresia: member.dataMembresia,
+      dataDesligamento: member.dataDesligamento,
+      observacoes: member.observacoes,
+      createdAt: member.createdAt || new Date().toISOString(),
+      updatedAt: member.updatedAt || new Date().toISOString()
+    }));
     setMembers(prevMembers => [...prevMembers, ...newMembers]);
     toast({ title: "Membros adicionados com sucesso!" });
   };
@@ -121,19 +186,37 @@ const Index = () => {
       const fullMember: Member = {
         id: member.id || `imported-${Date.now()}-${index}`,
         nome: member.nome || '',
+        nomeCompleto: member.nomeCompleto,
+        avatar_url: member.avatar_url,
         dataNascimento: member.dataNascimento || '',
         idade: member.idade || 0,
-        faixaEtaria: member.faixaEtaria || '',
+        mes: member.mes || '',
         sexo: member.sexo || 'M',
+        telefone: member.telefone || '',
+        email: member.email,
+        endereco: member.endereco || '',
+        rua: member.rua || '',
+        numero: member.numero || '',
+        bairro: member.bairro || '',
+        cidade: member.cidade || '',
+        estado: member.estado || '',
+        cep: member.cep || '',
         status: member.status || 'ativo',
+        statusCivil: member.statusCivil,
+        conjuge: member.conjuge,
+        parentesco: member.parentesco,
         batizado: member.batizado || false,
         membro: member.membro || false,
         lider: member.lider || false,
         professorEBQ: member.professorEBQ || false,
-        telefone: member.telefone || '',
-        bairro: member.bairro || '',
-        conjuge: member.conjuge,
-        avatar_url: member.avatar_url,
+        faixaEtaria: member.faixaEtaria || '',
+        pequeno_grupo: member.pequeno_grupo || false,
+        grupo: member.grupo,
+        numero_domes: member.numero_domes,
+        dataBatismo: member.dataBatismo,
+        dataMembresia: member.dataMembresia,
+        dataDesligamento: member.dataDesligamento,
+        observacoes: member.observacoes,
         createdAt: member.createdAt || new Date().toISOString(),
         updatedAt: member.updatedAt || new Date().toISOString()
       };
@@ -181,7 +264,7 @@ const Index = () => {
         />
         <div ref={memberListRef}>
           <MemberList 
-            members={filteredMembers} 
+            members={sortedAndFilteredMembers} 
             onMemberUpdate={handleMemberUpdate}
             onRefresh={handleRefresh}
             sortField={sortField}
