@@ -68,17 +68,8 @@ const Index = () => {
     if (!sortField) return filteredMembers;
     
     return [...filteredMembers].sort((a, b) => {
-      let valueA: string | number | boolean | undefined;
-      let valueB: string | number | boolean | undefined;
-      
-      if (sortField === 'idade') {
-        valueA = calculateAge(a.dataNascimento);
-        valueB = calculateAge(b.dataNascimento);
-      } else if (sortField === 'tipo') {
-        valueA = getMemberType(a);
-        valueB = getMemberType(b);
-      } else if (sortField === 'dataNascimento') {
-        // ✅ ORDENAÇÃO ESPECIAL POR DATA DE NASCIMENTO
+      // ✅ ORDENAÇÃO ESPECIAL POR DATA DE NASCIMENTO
+      if (sortField === 'dataNascimento') {
         // Regra: Primeiro pelo DIA (menor para maior), depois pelo MÊS (se dia igual), ignora ANO
         const dateA = new Date(a.dataNascimento || '1900-01-01');
         const dateB = new Date(b.dataNascimento || '1900-01-01');
@@ -90,13 +81,22 @@ const Index = () => {
         
         // Compara pelo dia primeiro
         if (dayA !== dayB) {
-          valueA = dayA;
-          valueB = dayB;
-        } else {
-          // Se o dia for igual, compara pelo mês
-          valueA = monthA;
-          valueB = monthB;
+          return sortDirection === 'asc' ? dayA - dayB : dayB - dayA;
         }
+        // Se o dia for igual, compara pelo mês
+        return sortDirection === 'asc' ? monthA - monthB : monthB - monthA;
+      }
+      
+      // Ordenação para outros campos
+      let valueA: string | number | boolean | undefined;
+      let valueB: string | number | boolean | undefined;
+      
+      if (sortField === 'idade') {
+        valueA = calculateAge(a.dataNascimento);
+        valueB = calculateAge(b.dataNascimento);
+      } else if (sortField === 'tipo') {
+        valueA = getMemberType(a);
+        valueB = getMemberType(b);
       } else {
         valueA = a[sortField];
         valueB = b[sortField];
