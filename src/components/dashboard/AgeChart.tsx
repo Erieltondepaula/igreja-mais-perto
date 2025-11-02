@@ -39,7 +39,7 @@ export const AgeChart = ({ members, onBarClick }: AgeChartProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
-          Distribuição por Faixa Etária (Total)
+          Distribuição por Faixa Etária (Ativos)
         </CardTitle>
       </CardHeader>
       <CardContent>

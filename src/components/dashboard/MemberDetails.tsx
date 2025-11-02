@@ -50,10 +50,10 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
         <CardContent className="p-4">
           <div className="flex items-center space-x-3 mb-4">
             <div className="relative">
-              {member.photoUrl ? (
+              {member.avatar_url ? (
                 <img
-                  src={member.photoUrl}
-                  alt="Foto do Membro"
+                  src={member.avatar_url}
+                  alt={member.nome}
                   className="w-20 h-20 rounded-full object-cover border-2 border-primary"
                 />
               ) : (

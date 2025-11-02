@@ -47,6 +47,16 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
     onFiltersChange(newFilters);
   };
   
+  // ✅ NOVA FUNÇÃO: Lida com a mudança no intervalo de idades
+  const handleAgeRangeChange = (field: 'min' | 'max', value: string) => {
+    const newRange = { ...filters.idadeRange, [field]: value };
+    if (!newRange.min && !newRange.max) {
+      handleFilterChange('idadeRange', undefined);
+    } else {
+      handleFilterChange('idadeRange', newRange);
+    }
+  };
+  
   const handleTipoMembroChange = (tipo: string, checked: boolean) => {
     const currentTipos = filters.tipoMembro || [];
     const newTipos = checked ? [...currentTipos, tipo] : currentTipos.filter(t => t !== tipo);
@@ -97,8 +107,8 @@ const handleBirthdayFilterChange = (
         </Button>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Input placeholder="Pesquisar por nome..." value={filters.search || ''} onChange={e => handleFilterChange('search', e.target.value || undefined)} />
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <Input placeholder="Pesquisar por nome..." value={filters.search || ''} onChange={e => handleFilterChange('search', e.target.value || undefined)} className="md:col-span-2" />
           {/* ✅ CORREÇÃO: Passamos 'undefined' quando o valor for 'all' */}
           <Select value={filters.statusGeral || 'all'} onValueChange={value => handleFilterChange('statusGeral', value === 'all' ? undefined : value as 'ativo' | 'desligado')}>
             <SelectTrigger><SelectValue placeholder="Status Geral" /></SelectTrigger>
@@ -112,6 +122,12 @@ const handleBirthdayFilterChange = (
             <SelectTrigger><SelectValue placeholder="Bairro" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Todos os Bairros</SelectItem>{uniqueBairros.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
           </Select>
+          {/* ✅ ALTERADO: Dois campos para o intervalo de idade */}
+          <div className="flex items-center gap-2">
+            <Input type="number" placeholder="Idade Mín." value={filters.idadeRange?.min || ''} onChange={e => handleAgeRangeChange('min', e.target.value)} />
+            <span className="text-muted-foreground">-</span>
+            <Input type="number" placeholder="Idade Máx." value={filters.idadeRange?.max || ''} onChange={e => handleAgeRangeChange('max', e.target.value)} />
+          </div>
         </div>
 
         <div className="border-t pt-4 space-y-2">

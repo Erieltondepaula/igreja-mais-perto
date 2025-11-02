@@ -70,6 +70,59 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSave)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+
+            {/* Campo para foto/avatar com upload */}
+            <FormField
+              control={form.control}
+              name="photoUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Foto/Avatar</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="avatar-upload" className="cursor-pointer">
+                        {typeof field.value === 'string' && field.value ? (
+                          <img
+                            src={field.value}
+                            alt="Avatar"
+                            className="w-16 h-16 rounded-full object-cover border"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 border">
+                            <span className="text-xs">Selecionar</span>
+                          </div>
+                        )}
+                      </label>
+                      <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const formData = new FormData();
+                          formData.append('avatar', file);
+                          try {
+                            const res = await fetch('/api/upload-avatar', {
+                              method: 'POST',
+                              body: formData,
+                            });
+                            const data = await res.json();
+                            if (data.avatar_url) {
+                              field.onChange(data.avatar_url);
+                            }
+                          } catch (err) {
+                            // TODO: feedback de erro
+                          }
+                        }}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
