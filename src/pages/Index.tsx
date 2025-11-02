@@ -8,12 +8,13 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Member, MemberFromDB, MemberFilters } from '@/types/member';
 import { filterMembers, calculateAge, getMemberType } from '@/utils/memberUtils';
 import { mockMembers } from '@/data/mockMembers';
+import { useAppContext } from '@/contexts/useAppContext';
 
 const API_URL = 'http://localhost:5001/api/members';
 
 const Index = () => {
   const [members, setMembers] = useLocalStorage<Member[]>('church-members', []);
-  const [filters, setFilters] = useState<MemberFilters>({});
+  const { filters, onFiltersChange } = useAppContext(); // ✅ Usar filtros do contexto
   const [sortField, setSortField] = useState<keyof Member | 'idade' | 'tipo' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
@@ -139,18 +140,18 @@ const Index = () => {
   };
 
   const handleFiltersChange = (newFilters: MemberFilters) => {
-    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleCardClick = (statusGeral?: 'ativo' | 'desligado') => {
     const newFilters = statusGeral ? { statusGeral } : {};
-    setFilters(newFilters);
+    onFiltersChange(newFilters);
     memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   // Lógica para gráficos e mapas
   const handleChartClick = (key: keyof MemberFilters, value: string) => {
-    setFilters(prevFilters => ({ ...prevFilters, [key]: value }));
+    onFiltersChange({ ...filters, [key]: value });
     memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -279,7 +280,7 @@ const Index = () => {
           filters={filters} 
           onFiltersChange={handleFiltersChange} 
         />
-        <div ref={memberListRef}>
+        <div ref={memberListRef} data-member-list>
           <MemberList 
             members={sortedAndFilteredMembers} 
             onMemberUpdate={handleMemberUpdate}
