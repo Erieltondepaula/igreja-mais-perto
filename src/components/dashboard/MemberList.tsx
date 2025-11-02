@@ -1,16 +1,18 @@
 // Local do arquivo: src/components/dashboard/MemberList.tsx
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Member } from '@/types/member';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, ArrowUpDown, ArrowUp, ArrowDown, Edit, RefreshCw } from 'lucide-react';
+import { Eye, ArrowUpDown, ArrowUp, ArrowDown, Edit, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MemberDetails } from './MemberDetails';
 import { MemberEdit } from './MemberEdit';
 import { calculateAge, getMemberType } from '@/utils/memberUtils';
+
+const ITEMS_PER_PAGE = 50;
 
 // ✅ NOVAS PROPRIEDADES PARA RECEBER O ESTADO DA ORDENAÇÃO
 interface MemberListProps {
@@ -50,8 +52,31 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // ❌ LÓGICA DE ORDENAÇÃO E ESTADO REMOVIDOS DESTE COMPONENTE
+  // Ordena membros alfabeticamente A-Z por padrão
+  const sortedMembers = useMemo(() => {
+    return [...members].sort((a, b) => {
+      const nameA = (a.nome || '').toLowerCase();
+      const nameB = (b.nome || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+  }, [members]);
+
+  // Calcula total de páginas
+  const totalPages = Math.ceil(sortedMembers.length / ITEMS_PER_PAGE);
+
+  // Pega membros da página atual
+  const paginatedMembers = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return sortedMembers.slice(startIndex, endIndex);
+  }, [sortedMembers, currentPage]);
+
+  // Reseta para página 1 quando total de páginas muda
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1);
+  }
 
   const getSortIcon = (field: string) => {
     if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground" />;
@@ -79,8 +104,12 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-            {/* ✅ USA O NÚMERO DE MEMBROS DA LISTA JÁ ORDENADA */}
-            Lista de Membros ({members.length})
+            Lista de Membros ({sortedMembers.length} registros) 
+            {totalPages > 1 && (
+              <span className="text-sm font-normal text-muted-foreground">
+                - Página {currentPage} de {totalPages}
+              </span>
+            )}
           </CardTitle>
           <Button variant="outline" size="sm" onClick={onRefresh}>
             <RefreshCw className={'h-4 w-4 mr-2'} />
@@ -113,8 +142,8 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* ✅ MAPEIA A LISTA JÁ ORDENADA QUE VEIO DO COMPONENTE PAI */}
-              {members.map(member => (
+              {/* ✅ EXIBE APENAS OS MEMBROS DA PÁGINA ATUAL */}
+              {paginatedMembers.map(member => (
                 <TableRow key={member.id}>
                   <TableCell>
                     {member.avatar_url ? (
@@ -147,6 +176,78 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
             </TableBody>
           </Table>
         </div>
+        
+        {/* ✅ CONTROLES DE PAGINAÇÃO */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-2 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, sortedMembers.length)} de {sortedMembers.length} registros
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="w-10"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+        
         {members.length === 0 && (<div className="text-center py-8 text-muted-foreground">Nenhum membro encontrado com os filtros aplicados.</div>)}
         <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
           <DialogContent className="max-w-3xl">
