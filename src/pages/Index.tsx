@@ -59,9 +59,10 @@ const Index = () => {
     return distribution;
   }, [activeMembers]);
 
+  // ✅ CORRIGIDO: Agora filtra de TODOS os membros, não apenas dos ativos
   const filteredMembers = useMemo(() => {
-    return filterMembers(activeMembers, filters);
-  }, [activeMembers, filters]);
+    return filterMembers(members, filters);
+  }, [members, filters]);
 
   // ✅ MEMBROS ORDENADOS - Aplica ordenação aos membros filtrados
   const sortedAndFilteredMembers = useMemo(() => {
