@@ -1,0 +1,6 @@
+Nome,DataNascimento,Sexo,Telefone,Email,Endereco,Bairro,Cidade,Estado,CEP,Status,Batizado,Membro
+João Silva Santos,1985-03-15,M,(11) 98765-4321,joao.silva@email.com,Rua das Flores 123,Vila Palestina,São Paulo,SP,08000-000,ativo,TRUE,TRUE
+Maria Oliveira Costa,1990-07-22,F,(11) 97654-3210,maria.costa@email.com,Av. Principal 456,Centro,São Paulo,SP,08001-000,ativo,TRUE,TRUE
+Pedro Almeida Junior,1978-12-03,M,(11) 96543-2109,pedro.almeida@email.com,Rua da Paz 789,Jardim São Paulo,São Paulo,SP,08002-000,ativo,TRUE,FALSE
+Ana Paula Ferreira,1992-05-18,F,(11) 95432-1098,ana.paula@email.com,Rua das Palmeiras 321,Vila Nova,São Paulo,SP,08003-000,ativo,TRUE,TRUE
+Carlos Eduardo Lima,1988-09-25,M,(11) 94321-0987,carlos.lima@email.com,Av. Central 654,Jardim Europa,São Paulo,SP,08004-000,ativo,FALSE,FALSE

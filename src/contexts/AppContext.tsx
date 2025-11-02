@@ -1,10 +1,8 @@
 // Local do arquivo: src/contexts/AppContext.tsx
 // ✅ CÓDIGO FINAL COM LÓGICA DE IMPORTAÇÃO CORRIGIDA
 
-import { createContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { useToast } from "@/components/ui/use-toast";
+import { createContext } from 'react';
 import { Member, MemberFilters } from '@/types/member';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export interface AppContextType {
   members: Member[];
@@ -20,53 +18,90 @@ export interface AppContextType {
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [storedMembers, setStoredMembers] = useLocalStorage<Member[]>('members-data', []);
-  const [members, setMembers] = useState<Member[]>(storedMembers);
+  // Limpa localStorage ao carregar o contexto
+  useEffect(() => {
+    localStorage.removeItem('members-data');
+  }, []);
+  const [members, setMembers] = useState<Member[]>([]);
   const [filters, setFilters] = useState<MemberFilters>({});
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Buscar membros do backend ao carregar
   useEffect(() => {
-    setMembers(storedMembers);
-  }, [storedMembers]);
+    const fetchMembers = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/members');
+        const data = await response.json();
+        setMembers(data);
+      } catch (error) {
+        toast({ title: 'Erro ao buscar membros', description: String(error) });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchMembers();
+  }, []);
 
   const onFiltersChange = (newFilters: MemberFilters) => {
     setFilters(newFilters);
   };
 
-  const onRefresh = () => {
-    setMembers(storedMembers);
-    toast({ title: "Dados Recarregados", description: "A lista de membros foi recarregada do armazenamento local." });
+  const onRefresh = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/members');
+      const data = await response.json();
+      setMembers(data);
+      toast({ title: "Dados Recarregados", description: "A lista de membros foi recarregada do banco de dados." });
+    } catch (error) {
+      toast({ title: 'Erro ao buscar membros', description: String(error) });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
+  // Exemplo: Atualizar membro no backend
   const onMemberUpdate = async (updatedMember: Member): Promise<void> => {
-    const updatedMembers = members.map(m => m.id === updatedMember.id ? updatedMember : m);
-    setStoredMembers(updatedMembers);
-    toast({ title: "Membro atualizado com sucesso!" });
+    setIsLoading(true);
+    try {
+      await fetch(`/api/members/${updatedMember.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedMember)
+      });
+      await onRefresh();
+      toast({ title: "Membro atualizado com sucesso!" });
+    } catch (error) {
+      toast({ title: 'Erro ao atualizar membro', description: String(error) });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // ✅ LÓGICA CORRIGIDA: Esta função agora SUBSTITUI os dados, agindo como a onReplaceAll.
+  // Importação: Envia os membros para o backend
   const onImport = async (importedMembers: Partial<Member>[]): Promise<boolean> => {
-    const newMembers = importedMembers.map((m, index) => ({
-        ...m,
-        id: `member-${Date.now()}-${index}`, // Gera um ID único para cada membro
-    })) as Member[];
-    
-    setStoredMembers(newMembers); // Substitui a lista antiga pela nova
-    toast({ title: "Planilha importada com sucesso!", description: "Os dados anteriores foram substituídos." });
-    return true;
+    setIsLoading(true);
+    try {
+      await fetch('/api/members/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ members: importedMembers })
+      });
+      await onRefresh();
+      toast({ title: "Planilha importada com sucesso!", description: "Os dados anteriores foram substituídos." });
+      return true;
+    } catch (error) {
+      toast({ title: 'Erro ao importar membros', description: String(error) });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Mantemos a função onReplaceAll por consistência, fazendo a mesma coisa.
-  const onReplaceAll = async (importedMembers: Partial<Member>[]): Promise<boolean> => {
-     const newMembers = importedMembers.map((m, index) => ({
-        ...m,
-        id: `member-${Date.now()}-${index}`,
-    })) as Member[];
-    setStoredMembers(newMembers);
-    toast({ title: "Base de dados substituída com sucesso!" });
-    return true;
-  };
+  // Substituir todos os membros (igual ao import)
+  const onReplaceAll = onImport;
 
   const value = {
     members,

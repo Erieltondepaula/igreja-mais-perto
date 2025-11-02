@@ -116,6 +116,19 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
               {/* ✅ MAPEIA A LISTA JÁ ORDENADA QUE VEIO DO COMPONENTE PAI */}
               {members.map(member => (
                 <TableRow key={member.id}>
+                  <TableCell>
+                    {member.avatar_url ? (
+                      <img
+                        src={member.avatar_url}
+                        alt={member.nome}
+                        className="w-8 h-8 rounded-full object-cover mr-2 inline-block"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-200 mr-2 inline-block flex items-center justify-center text-gray-400">
+                        <span className="text-xs">?</span>
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{member.nome || 'N/A'}</TableCell>
                   <TableCell>{member.dataNascimento ? new Date(member.dataNascimento + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A'}</TableCell>
                   <TableCell>{calculateAge(member.dataNascimento)} anos</TableCell>

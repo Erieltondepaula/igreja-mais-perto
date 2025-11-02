@@ -4,7 +4,7 @@ export interface Member {
   id: string;
   nome: string;
   nomeCompleto?: string;
-  photoUrl?: string;
+  avatar_url?: string; // Caminho da foto/avatar do membro
   dataNascimento: string;
   idade: number;
   mes: string;

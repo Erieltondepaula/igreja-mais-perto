@@ -1,43 +1,69 @@
+// ...existing code...
+// Exemplo de log de interação
+// (deve ser chamado após a inicialização do logger)
+const avatarRouter = require('./routes/avatar');
+const importarXLSRouter = require('./routes/importarXLS');
+const logger = require('./config/logger');
+const fs = require('fs');
+const path = require('path');
+// Arquiva e cria novo log ao iniciar o sistema
+function archiveLog(logFileName) {
+  const logPath = path.join(__dirname, 'log', logFileName);
+  if (fs.existsSync(logPath)) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('pt-BR').replace(/\//g, '-') + '_' + now.toLocaleTimeString('pt-BR').replace(/:/g, '-');
+    const archiveDir = path.join(__dirname, 'log', 'archive');
+    if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir);
+    const archivePath = path.join(archiveDir, `${logFileName.replace('.log','')}_${dateStr}.log`);
+    fs.copyFileSync(logPath, archivePath);
+    fs.writeFileSync(logPath, '', { flag: 'w' });
+    console.log(`🧹 Log ${logFileName} arquivado e limpo.`);
+  }
+}
+archiveLog('error.log');
+archiveLog('app.log');
+// ...existing code...
 // Local do arquivo: backend/server.js
 
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-// ✅ NOVA IMPORTAÇÃO: Substituindo MongoDB por Access
-const accessDB = require('./config/database');
-const MemberService = require('./services/MemberService');
-const AccessInitializer = require('./scripts/initializeAccess');
+// 🐘 POSTGRESQL: Sistema moderno e robusto
+const db = require('./config/postgresql');
+const MemberService = require('./services/MemberServicePostgreSQL');
 
 const app = express();
+app.use('/api', avatarRouter);
+app.use('/api', importarXLSRouter);
 
 // Configuração do CORS para permitir a comunicação com o front-end
 const corsOptions = {
-  origin: ['http://localhost:8080', 'http://localhost:5173'],
-  optionsSuccessStatus: 200 
+  origin: ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'],
+  optionsSuccessStatus: 200,
+  credentials: true
 };
 app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '10mb' })); 
 
-// ✅ INICIALIZAÇÃO AUTOMÁTICA DO ACCESS
+// 🐘 INICIALIZAÇÃO POSTGRESQL
 async function initializeSystem() {
-  console.log('🔄 Inicializando sistema com Microsoft Access...');
-  
-  const initializer = new AccessInitializer();
-  const accessReady = await initializer.initialize();
-  
-  if (!accessReady) {
-    console.error('❌ Falha na inicialização do Access. Sistema não pode continuar.');
-    process.exit(1);
-  }
-  
-  // Conectar após inicialização bem-sucedida
+  logger.info('🔄 Inicializando sistema com PostgreSQL...');
+  logger.info('🔄 Inicializando sistema com PostgreSQL...');
   try {
-    await accessDB.connect();
-    console.log('✅ Conectado ao Microsoft Access com sucesso!');
+    await db.connect();
+    logger.info('✅ Conectado ao PostgreSQL com sucesso!');
+  logger.info('✅ Conectado ao PostgreSQL com sucesso!');
+    // Verificar se o schema existe
+    const healthCheck = await db.healthCheck();
+    logger.info(`🏥 Status do banco: ${healthCheck.status}`);
+  logger.info(`🏥 Status do banco: ${healthCheck.status}`);
   } catch (err) {
-    console.error('❌ Falha ao conectar com o Access:', err);
+    logger.error(`❌ Falha ao conectar com PostgreSQL: ${err}`);
+  logger.error(`❌ Falha ao conectar com PostgreSQL: ${err}`);
+    logger.info('💡 Execute: node scripts/setupPostgreSQL.js');
+  logger.info('💡 Execute: node scripts/setupPostgreSQL.js');
     process.exit(1);
   }
 }
@@ -45,14 +71,16 @@ async function initializeSystem() {
 
 // --- ROTAS DA API ---
 
-// ✅ NOVA ROTA: Buscar TODOS os membros do Access
+// 🐘 ROTA: Buscar TODOS os membros do PostgreSQL
 app.get('/api/members', async (req, res) => {
   try {
     const members = await MemberService.getAllMembers();
     res.json(members);
   } catch (error) {
-    console.error("❌ Erro ao buscar membros:", error);
-    res.status(500).json({ message: 'Erro ao buscar membros do Access.' });
+    logger.error(`❌ Erro ao buscar membros: ${error}`);
+  logger.error(`❌ Erro ao buscar membros: ${error}`);
+  logger.info('🔎 Tentativa de buscar todos os membros falhou.');
+    res.status(500).json({ message: 'Erro ao buscar membros do PostgreSQL.' });
   }
 });
 
@@ -66,19 +94,22 @@ app.get('/api/members/:id', async (req, res) => {
     }
     res.json(member);
   } catch (error) {
-    console.error(`❌ Erro ao buscar membro ${req.params.id}:`, error);
+    logger.error(`❌ Erro ao buscar membro ${req.params.id}: ${error}`);
+  logger.error(`❌ Erro ao buscar membro ${req.params.id}: ${error}`);
+  logger.info(`🔎 Tentativa de buscar membro por ID (${req.params.id}) falhou.`);
+  logger.info(`🗑️ ${result.rowCount} membros removidos da tabela`);
     res.status(500).json({ message: 'Erro ao buscar membro.' });
   }
 });
 
-// ✅ NOVA ROTA: Criar novo membro
+// 🐘 ROTA: Criar novo membro com ID personalizado
 app.post('/api/members', async (req, res) => {
   try {
     const newMember = await MemberService.createMember(req.body);
     res.status(201).json(newMember);
   } catch (error) {
-    console.error("❌ Erro ao criar membro:", error);
-    res.status(500).json({ message: 'Erro ao criar membro no Access.' });
+    logger.error(`❌ Erro ao criar membro: ${error}`);
+    res.status(500).json({ message: 'Erro ao criar membro no PostgreSQL.' });
   }
 });
 
@@ -92,7 +123,7 @@ app.put('/api/members/:id', async (req, res) => {
     }
     res.json(updatedMember);
   } catch (error) {
-    console.error(`❌ Erro ao atualizar membro ${req.params.id}:`, error);
+    logger.error(`❌ Erro ao atualizar membro ${req.params.id}: ${error}`);
     res.status(500).json({ message: 'Erro ao atualizar membro.' });
   }
 });
@@ -104,74 +135,145 @@ app.delete('/api/members/:id', async (req, res) => {
     await MemberService.deleteMember(id);
     res.json({ message: 'Membro removido com sucesso!' });
   } catch (error) {
-    console.error(`❌ Erro ao deletar membro ${req.params.id}:`, error);
+    logger.error(`❌ Erro ao deletar membro ${req.params.id}: ${error}`);
     res.status(500).json({ message: 'Erro ao deletar membro.' });
   }
 });
 
-// ✅ NOVA ROTA: Importar membros em massa (do Excel para Access)
+// 🐘 ROTA: Importar membros com anti-duplicação e IDs personalizados
 app.post('/api/members/batch', async (req, res) => {
-  console.log("➡️ [LOG] Recebida requisição em /api/members/batch");
+  logger.info("➡️ [LOG] Recebida requisição de importação em massa");
   const { members, replaceAll } = req.body;
 
   if (!members || !Array.isArray(members)) {
-    console.error("❌ [ERRO] 'members' não é um array ou não foi fornecido.");
+    logger.error("❌ [ERRO] 'members' não é um array ou não foi fornecido.");
     return res.status(400).json({ message: "Formato de dados inválido." });
   }
   
-  console.log(`➡️ [LOG] Recebidos ${members.length} membros. Substituir todos: ${replaceAll}`);
+  logger.info(`➡️ [LOG] Recebidos ${members.length} membros. Substituir todos: ${replaceAll}`);
+  logger.info(`🎯 [LOG] IDs personalizados serão gerados automaticamente (formato: AA20253010104302)`);
 
   try {
     // Se replaceAll for true, limpar tabela primeiro
     if (replaceAll) {
-      console.log("🗑️ [LOG] Limpando tabela de membros...");
-      await accessDB.execute("DELETE FROM Membros");
-      console.log("✅ [LOG] Tabela limpa com sucesso!");
+      logger.info("🗑️ [LOG] Limpando tabela de membros...");
+      await MemberService.clearAllMembers();
+      logger.info("✅ [LOG] Tabela limpa com sucesso!");
     }
 
-    const results = await MemberService.importMembers(members);
+    // 🎯 SISTEMA ANTI-DUPLICAÇÃO: Verificar duplicatas por Nome + Data Nascimento
+    const processedMembers = [];
+    const duplicateChecks = [];
+    
+    for (const member of members) {
+      // Criar chave única para verificação (nome + data nascimento)
+      const uniqueKey = `${(member.nome || '').trim().toLowerCase()}_${member.dataNascimento || member.data_nascimento || ''}`;
+      
+      if (!duplicateChecks.includes(uniqueKey)) {
+        duplicateChecks.push(uniqueKey);
+        processedMembers.push({
+          ...member,
+          // Garantir que não há ID do Excel (será gerado pelo PostgreSQL)
+          id: undefined,
+          // Padronizar nomes dos campos
+          nome_completo: member.nomeCompleto || member.nome_completo,
+          data_nascimento: member.dataNascimento || member.data_nascimento,
+          status_civil: member.statusCivil || member.status_civil,
+          professor_ebq: member.professorEBQ || member.professor_ebq,
+          pequeno_grupo: member.pequeno_grupo || false,
+          data_batismo: member.dataBatismo || member.data_batismo,
+          data_membresia: member.dataMembresia || member.data_membresia,
+          data_desligamento: member.dataDesligamento || member.data_desligamento
+        });
+      } else {
+        logger.info(`⚠️ [DUPLICATA] Membro duplicado ignorado: ${member.nome}`);
+      }
+    }
+    
+  logger.info(`📊 [LOG] ${processedMembers.length} membros únicos serão processados`);
+
+    const results = await MemberService.importMembers(processedMembers);
     
     const successCount = results.filter(r => r.success).length;
     const errorCount = results.filter(r => !r.success).length;
+    const duplicateCount = members.length - processedMembers.length;
     
-    console.log(`✅ [LOG] Importação concluída: ${successCount} sucessos, ${errorCount} erros`);
+  logger.info(`✅ [LOG] Importação concluída:`);
+  logger.info(`   - ${successCount} sucessos com IDs personalizados`);
+  logger.info(`   - ${errorCount} erros`);
+  logger.info(`   - ${duplicateCount} duplicatas evitadas`);
+    
+    // Mostrar alguns IDs gerados como exemplo
+    const successResults = results.filter(r => r.success && r.id);
+    if (successResults.length > 0) {
+      logger.info(`🆔 [EXEMPLOS] IDs gerados: ${successResults.slice(0, 3).map(r => r.id).join(', ')}`);
+    }
     
     res.json({
-      message: `Importação concluída: ${successCount} membros importados com sucesso, ${errorCount} erros.`,
+      message: `Importação concluída: ${successCount} membros com IDs personalizados, ${errorCount} erros, ${duplicateCount} duplicatas evitadas.`,
       results,
-      stats: { success: successCount, errors: errorCount }
+      stats: { 
+        success: successCount, 
+        errors: errorCount, 
+        duplicates: duplicateCount,
+        total_processed: processedMembers.length,
+        total_received: members.length
+      }
     });
     
   } catch (error) {
-    console.error("❌ [ERRO GRAVE] Falha na importação:", error);
+    logger.error(`❌ [ERRO GRAVE] Falha na importação: ${error}`);
     res.status(500).json({ 
-      message: 'Erro ao importar membros para o Access.', 
+      message: 'Erro ao importar membros para o PostgreSQL.', 
       error: error.message 
     });
   }
 });
 
-// ✅ NOVA ROTA: Estatísticas gerais
+// 🐘 ROTA: Estatísticas gerais do PostgreSQL
 app.get('/api/statistics', async (req, res) => {
   try {
     const stats = await MemberService.getStatistics();
     res.json(stats);
   } catch (error) {
-    console.error("❌ Erro ao buscar estatísticas:", error);
+    logger.error(`❌ Erro ao buscar estatísticas: ${error}`);
     res.status(500).json({ message: 'Erro ao buscar estatísticas.' });
   }
 });
 
+// 🧪 ROTA: Testar geração de ID personalizado
+app.get('/api/test-id/:nome/:sobrenome', async (req, res) => {
+  try {
+    const { nome, sobrenome } = req.params;
+    const customId = await MemberService.generateCustomId(nome, `${nome} ${sobrenome}`);
+    res.json({ 
+      nome, 
+      sobrenome, 
+      id_gerado: customId, 
+      formato: 'AA20253010104302' 
+    });
+  } catch (error) {
+    logger.error(`❌ Erro ao gerar ID teste: ${error}`);
+    res.status(500).json({ message: 'Erro ao gerar ID personalizado.' });
+  }
+});
+
+// 📤 ROTAS: Importação Interativa
+const importacaoRoutes = require('./routes/importacao');
+app.use('/api/importacao', importacaoRoutes);
+
 const PORT = process.env.PORT || 5001;
 
-// ✅ INICIALIZAR SISTEMA E DEPOIS SUBIR SERVIDOR
+// 🐘 INICIALIZAR POSTGRESQL E SUBIR SERVIDOR
 initializeSystem().then(() => {
   app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    console.log(`📊 Banco Access: backend/database/MembrosDB.accdb`);
-    console.log(`🌐 API disponível em: http://localhost:${PORT}`);
+    logger.info(`🚀 Servidor rodando na porta ${PORT}`);
+    logger.info(`� Banco PostgreSQL: dashboard_membros`);
+    logger.info(`🌐 API disponível em: http://localhost:${PORT}`);
+    logger.info(`🆔 IDs personalizados: formato AA20253010104302`);
+    logger.info(`🧪 Teste ID: http://localhost:${PORT}/api/test-id/ABNER/LIMA`);
   });
 }).catch(error => {
-  console.error('❌ Falha crítica na inicialização:', error);
+  logger.error(`❌ Falha crítica na inicialização: ${error}`);
   process.exit(1);
 });

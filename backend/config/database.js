@@ -1,66 +1,29 @@
-// Local do arquivo: backend/config/database.js
-// Configuração de conexão com Microsoft Access via ODBC
-
-const odbc = require('odbc');
-const path = require('path');
-
-// Caminho para o arquivo Access
-const ACCESS_DB_PATH = path.join(__dirname, '..', 'database', 'MembrosDB.accdb');
-
-// String de conexão ODBC para Access
-const connectionString = `Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=${ACCESS_DB_PATH};`;
-
-class AccessDatabase {
-  constructor() {
-    this.connection = null;
+// Configuração do PostgreSQL
+const config = {
+  development: {
+    user: 'membros_user',
+    host: 'localhost',
+    database: 'dashboard_membros',
+    password: '252088',
+    port: 5432,
+    max: 20, // máximo de conexões no pool
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  },
+  
+  production: {
+    user: process.env.DB_USER || 'membros_user',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'dashboard_membros',
+    password: process.env.DB_PASSWORD || '252088',
+    port: process.env.DB_PORT || 5432,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
   }
+};
 
-  async connect() {
-    try {
-      this.connection = await odbc.connect(connectionString);
-      console.log('✅ Conectado ao Microsoft Access com sucesso!');
-      return this.connection;
-    } catch (error) {
-      console.error('❌ Erro ao conectar com Access:', error);
-      throw error;
-    }
-  }
+const environment = process.env.NODE_ENV || 'development';
 
-  async disconnect() {
-    if (this.connection) {
-      await this.connection.close();
-      console.log('📤 Conexão com Access encerrada.');
-    }
-  }
-
-  async query(sql, params = []) {
-    try {
-      if (!this.connection) {
-        await this.connect();
-      }
-      
-      const result = await this.connection.query(sql, params);
-      return result;
-    } catch (error) {
-      console.error('❌ Erro na consulta SQL:', error);
-      throw error;
-    }
-  }
-
-  // Método para executar comandos (INSERT, UPDATE, DELETE)
-  async execute(sql, params = []) {
-    try {
-      if (!this.connection) {
-        await this.connect();
-      }
-      
-      const result = await this.connection.query(sql, params);
-      return result;
-    } catch (error) {
-      console.error('❌ Erro ao executar comando SQL:', error);
-      throw error;
-    }
-  }
-}
-
-module.exports = new AccessDatabase();
+module.exports = config[environment];
