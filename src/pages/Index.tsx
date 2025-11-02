@@ -78,9 +78,25 @@ const Index = () => {
         valueA = getMemberType(a);
         valueB = getMemberType(b);
       } else if (sortField === 'dataNascimento') {
-        // Para data de nascimento: mais recente (maior data) = mais novo
-        valueA = new Date(a.dataNascimento || '1900-01-01').getTime();
-        valueB = new Date(b.dataNascimento || '1900-01-01').getTime();
+        // ✅ ORDENAÇÃO ESPECIAL POR DATA DE NASCIMENTO
+        // Regra: Primeiro pelo DIA (menor para maior), depois pelo MÊS (se dia igual), ignora ANO
+        const dateA = new Date(a.dataNascimento || '1900-01-01');
+        const dateB = new Date(b.dataNascimento || '1900-01-01');
+        
+        const dayA = dateA.getUTCDate();
+        const dayB = dateB.getUTCDate();
+        const monthA = dateA.getUTCMonth(); // 0-11
+        const monthB = dateB.getUTCMonth();
+        
+        // Compara pelo dia primeiro
+        if (dayA !== dayB) {
+          valueA = dayA;
+          valueB = dayB;
+        } else {
+          // Se o dia for igual, compara pelo mês
+          valueA = monthA;
+          valueB = monthB;
+        }
       } else {
         valueA = a[sortField];
         valueB = b[sortField];
