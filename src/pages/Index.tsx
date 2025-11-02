@@ -28,6 +28,7 @@ const Index = () => {
     const fetchMembers = async () => {
       try {
         const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Backend não disponível');
         const data: MemberFromDB[] = await response.json();
         const formattedData: Member[] = data.map((item) => ({
           ...item,
@@ -35,11 +36,15 @@ const Index = () => {
         }));
         setMembers(formattedData);
       } catch (error) {
-        console.error('Error fetching members:', error);
+        console.error('Backend não disponível, usando dados locais/mock:', error);
+        // Se não há dados no localStorage, usa dados mock
+        if (members.length === 0) {
+          setMembers(mockMembers);
+        }
       }
     };
     fetchMembers();
-  }, [setMembers]);
+  }, [setMembers, members.length]);
 
   const activeMembers = useMemo(() => {
     return members.filter(m => m.status !== 'desligado');
