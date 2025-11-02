@@ -30,8 +30,13 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
 
     setLoading(true);
     try {
+      console.log('📁 Iniciando importação do arquivo:', file.name);
+      
       // Importa diretamente do Excel usando a função do excelUtils
       const importedMembers = await importFromExcel(file);
+      
+      console.log('✅ Membros importados:', importedMembers.length);
+      console.log('📊 Primeiros 3 membros:', importedMembers.slice(0, 3));
       
       if (importedMembers.length === 0) {
         throw new Error('Nenhum membro foi encontrado no arquivo');
@@ -47,6 +52,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
       });
 
     } catch (error: unknown) {
+      console.error('❌ Erro na importação:', error);
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
       toast({
         title: "Erro ao importar",

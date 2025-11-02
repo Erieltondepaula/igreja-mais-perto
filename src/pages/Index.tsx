@@ -115,14 +115,39 @@ const Index = () => {
   };
 
   const handleReplaceAll = (importedMembers: Partial<Member>[]) => {
-    const newMembers: Member[] = importedMembers.map((member, index) => ({
-      ...member,
-      id: `imported-${Date.now()}-${index}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    })) as Member[];
+    console.log('🔄 Substituindo todos os membros. Total importado:', importedMembers.length);
+    
+    const newMembers: Member[] = importedMembers.map((member, index) => {
+      const fullMember: Member = {
+        id: member.id || `imported-${Date.now()}-${index}`,
+        nome: member.nome || '',
+        dataNascimento: member.dataNascimento || '',
+        idade: member.idade || 0,
+        faixaEtaria: member.faixaEtaria || '',
+        sexo: member.sexo || 'M',
+        status: member.status || 'ativo',
+        batizado: member.batizado || false,
+        membro: member.membro || false,
+        lider: member.lider || false,
+        professorEBQ: member.professorEBQ || false,
+        telefone: member.telefone || '',
+        bairro: member.bairro || '',
+        conjuge: member.conjuge,
+        avatar_url: member.avatar_url,
+        createdAt: member.createdAt || new Date().toISOString(),
+        updatedAt: member.updatedAt || new Date().toISOString()
+      };
+      return fullMember;
+    });
+    
+    console.log('✅ Membros processados:', newMembers.length);
+    console.log('📊 Primeiros 3 membros processados:', newMembers.slice(0, 3));
+    
     setMembers(newMembers);
-    toast({ title: "Base de dados substituída com sucesso!" });
+    toast({ 
+      title: "Base de dados substituída com sucesso!", 
+      description: `${newMembers.length} membros carregados`
+    });
   };
 
   const handleMemberUpdate = (updatedMember: Member) => {
