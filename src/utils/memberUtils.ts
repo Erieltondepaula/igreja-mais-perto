@@ -1,5 +1,5 @@
 // Local do arquivo: src/utils/memberUtils.ts
-// ✅ CÓDIGO FINAL E DEFINITIVO (COM FUSO HORÁRIO DE BRASÍLIA GARANTIDO)
+// ✅ CORREÇÃO: Adicionada a lógica de filtro para Líderes e Professores.
 
 import { Member, MemberFilters, ChartData, AgeGroupData, NeighborhoodData } from '@/types/member';
 
@@ -97,7 +97,7 @@ export const isBirthdayInPeriod = (birthDate: string, startDate?: string, endDat
     return birthThisYear >= startUTC && birthThisYear <= endUTC;
 };
 
-// ✅ COLE ESTA NOVA FUNÇÃO NO LUGAR DA ANTIGA
+// ✅ CORREÇÃO APLICADA AQUI: Removidas as vírgulas que causavam o erro.
 export const getAgeGroup = (age: number): string => {
     if (age <= 6) return 'Infância';
     if (age <= 10) return 'Crianças';
@@ -118,9 +118,21 @@ export const getMemberType = (member: Member): 'Membro' | 'Batizado Congregado' 
 export const filterMembers = (members: Member[], filters: MemberFilters): Member[] => {
   return members.filter(member => {
     if (!member.dataNascimento) return false; // Garante que membros sem data não quebrem o filtro
+    
+    const age = calculateAge(member.dataNascimento);
+
     if (filters.search && !member.nome.toLowerCase().includes(filters.search.toLowerCase())) return false;
     if (filters.statusGeral && member.status !== filters.statusGeral) return false;
-    if (filters.faixaEtaria && getAgeGroup(calculateAge(member.dataNascimento)) !== filters.faixaEtaria) return false;
+    
+    // ✅ ALTERADO: Lógica para filtrar por intervalo de idade
+    if (filters.idadeRange) {
+      const minAge = filters.idadeRange.min ? parseInt(filters.idadeRange.min, 10) : null;
+      const maxAge = filters.idadeRange.max ? parseInt(filters.idadeRange.max, 10) : null;
+      if (minAge !== null && age < minAge) return false;
+      if (maxAge !== null && age > maxAge) return false;
+    }
+
+    if (filters.faixaEtaria && getAgeGroup(age) !== filters.faixaEtaria) return false;
     if (filters.sexo && member.sexo !== filters.sexo) return false;
     if (filters.bairro && member.bairro !== filters.bairro) return false;
     if (filters.aniversariantesDoMes && !isBirthdayInMonth(member.dataNascimento)) return false;
@@ -141,6 +153,11 @@ export const filterMembers = (members: Member[], filters: MemberFilters): Member
         });
         if (!typeMatch) return false;
     }
+
+    // ✅ ADICIONADO: Lógica de filtro para Líderes e Professores
+    if (filters.lider && !member.lider) return false;
+    if (filters.professorEBQ && !member.professorEBQ) return false;
+
     return true;
   });
 };
@@ -156,15 +173,18 @@ export const getGenderChartData = (members: Member[]): ChartData[] => {
   }, {} as Record<string, number>);
   return Object.keys(genderCount).map(key => ({ name: key, value: genderCount[key] }));
 };
+
+// ✅ CORREÇÃO APLICADA AQUI: As chaves agora estão no plural.
 export const getAgeGroupChartData = (members: Member[]): AgeGroupData[] => {
-  const ageGroups: Record<string, number> = { 'Infância': 0, 'Criança': 0, 'Adolescente': 0, 'Jovem': 0, 'Adulto': 0, 'Idoso': 0 };
+  const ageGroups: Record<string, number> = { 'Infância': 0, 'Crianças': 0, 'Adolescentes': 0, 'Jovens': 0, 'Adultos': 0, 'Idosos': 0 };
   members.forEach(member => {
     const group = getAgeGroup(calculateAge(member.dataNascimento));
     if (ageGroups[group] !== undefined) ageGroups[group]++;
   });
-  const fills: Record<string, string> = { 'Infância': '#A78BFA', 'Criança': '#FBBF24', 'Adolescente': '#60A5FA', 'Jovem': '#34D399', 'Adulto': '#F87171', 'Idoso': '#9CA3AF' };
+  const fills: Record<string, string> = { 'Infância': '#A78BFA', 'Crianças': '#FBBF24', 'Adolescentes': '#60A5FA', 'Jovens': '#34D399', 'Adultos': '#F87171', 'Idosos': '#9CA3AF' };
   return Object.keys(ageGroups).map(key => ({ faixaEtaria: key, quantidade: ageGroups[key], fill: fills[key] || '#8884d8' }));
 };
+
 export const getNeighborhoodData = (members: Member[]): NeighborhoodData[] => {
   const neighborhoodCount = members.reduce((acc, member) => {
     const bairro = member.bairro || 'Não informado';

@@ -1,10 +1,10 @@
 // Local do arquivo: src/contexts/AppContext.tsx
+// ✅ CÓDIGO FINAL COM LÓGICA DE IMPORTAÇÃO CORRIGIDA
 
-import { createContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Member, MemberFromDB, MemberFilters } from '@/types/member';
-
-const API_URL = 'http://localhost:5001/api/members';
+import { Member, MemberFilters } from '@/types/member';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export interface AppContextType {
   members: Member[];
@@ -20,91 +20,63 @@ export interface AppContextType {
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [storedMembers, setStoredMembers] = useLocalStorage<Member[]>('members-data', []);
+  const [members, setMembers] = useState<Member[]>(storedMembers);
   const [filters, setFilters] = useState<MemberFilters>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const fetchMembers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error('Falha ao buscar dados do servidor. O back-end está rodando?');
-      const data: MemberFromDB[] = await response.json();
-      const formattedData: Member[] = data.map((item) => ({ ...item, id: item._id }));
-      setMembers(formattedData);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Não foi possível carregar os dados.";
-      toast({ title: "Erro de Conexão", description: errorMessage, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+    setMembers(storedMembers);
+  }, [storedMembers]);
 
-  const handleBatchUpdate = async (importedMembers: Partial<Member>[], replaceAll: boolean): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_URL}/batch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ members: importedMembers, replaceAll }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Falha ao salvar dados no servidor');
-      }
-      await fetchMembers();
-      return true;
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar dados importados";
-      toast({ title: "Erro na Importação", description: errorMessage, variant: "destructive" });
-      return false;
-    }
+  const onFiltersChange = (newFilters: MemberFilters) => {
+    setFilters(newFilters);
   };
 
-  const handleImport = async (importedMembers: Partial<Member>[]) => {
-    const success = await handleBatchUpdate(importedMembers, false);
-    if (success) toast({ title: "Membros adicionados com sucesso!" });
-    return success;
-  };
-
-  const handleReplaceAll = async (importedMembers: Partial<Member>[]) => {
-    const success = await handleBatchUpdate(importedMembers, true);
-    if (success) toast({ title: "Base de dados substituída com sucesso!" });
-    return success;
-  };
-
-  const handleMemberUpdate = async (updatedMember: Member) => {
-     try {
-        const response = await fetch(`${API_URL}/${updatedMember.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedMember),
-        });
-        if (!response.ok) throw new Error('Falha ao atualizar membro');
-        await fetchMembers();
-     } catch(error) {
-        const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-        toast({ title: "Erro ao atualizar membro", description: errorMessage, variant: "destructive" });
-     }
+  const onRefresh = () => {
+    setMembers(storedMembers);
+    toast({ title: "Dados Recarregados", description: "A lista de membros foi recarregada do armazenamento local." });
   };
   
-  const handleFiltersChange = (newFilters: MemberFilters) => {
-    setFilters(newFilters);
+  const onMemberUpdate = async (updatedMember: Member): Promise<void> => {
+    const updatedMembers = members.map(m => m.id === updatedMember.id ? updatedMember : m);
+    setStoredMembers(updatedMembers);
+    toast({ title: "Membro atualizado com sucesso!" });
+  };
+
+  // ✅ LÓGICA CORRIGIDA: Esta função agora SUBSTITUI os dados, agindo como a onReplaceAll.
+  const onImport = async (importedMembers: Partial<Member>[]): Promise<boolean> => {
+    const newMembers = importedMembers.map((m, index) => ({
+        ...m,
+        id: `member-${Date.now()}-${index}`, // Gera um ID único para cada membro
+    })) as Member[];
+    
+    setStoredMembers(newMembers); // Substitui a lista antiga pela nova
+    toast({ title: "Planilha importada com sucesso!", description: "Os dados anteriores foram substituídos." });
+    return true;
+  };
+
+  // Mantemos a função onReplaceAll por consistência, fazendo a mesma coisa.
+  const onReplaceAll = async (importedMembers: Partial<Member>[]): Promise<boolean> => {
+     const newMembers = importedMembers.map((m, index) => ({
+        ...m,
+        id: `member-${Date.now()}-${index}`,
+    })) as Member[];
+    setStoredMembers(newMembers);
+    toast({ title: "Base de dados substituída com sucesso!" });
+    return true;
   };
 
   const value = {
     members,
     filters,
     isLoading,
-    onFiltersChange: handleFiltersChange,
-    onImport: handleImport,
-    onReplaceAll: handleReplaceAll,
-    onMemberUpdate: handleMemberUpdate,
-    onRefresh: fetchMembers
+    onFiltersChange,
+    onImport,
+    onReplaceAll,
+    onMemberUpdate,
+    onRefresh
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

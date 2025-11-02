@@ -38,12 +38,8 @@ export interface Member {
   updatedAt: string;
 }
 
-// Tipo que representa o membro como vem do MongoDB (com _id)
-export type MemberFromDB = Omit<Member, 'id'> & {
-  _id: string;
-};
+export type MemberFromDB = Omit<Member, 'id'> & { _id: string; };
 
-// Interface para os filtros da aplicação
 export interface MemberFilters {
   statusGeral?: 'ativo' | 'desligado';
   tipoMembro?: string[];
@@ -51,17 +47,15 @@ export interface MemberFilters {
   bairro?: string;
   faixaEtaria?: string;
   anoNascimento?: string;
+  idadeRange?: { min?: string; max?: string; };
   aniversariantesDoMes?: boolean;
   aniversariantesDoDia?: boolean;
-  // Campos para o filtro por período de aniversário
-  aniversariantesPeriodo?: {
-    dataInicial?: string;
-    dataFinal?: string;
-  };
+  lider?: boolean;
+  professorEBQ?: boolean;
+  aniversariantesPeriodo?: { dataInicial?: string; dataFinal?: string; };
   search?: string;
 }
 
-// Interfaces para os dados dos gráficos
 export interface ChartData {
   name: string;
   value: number;
@@ -77,4 +71,14 @@ export interface AgeGroupData {
 export interface NeighborhoodData {
   bairro: string;
   quantidade: number;
+}
+
+// ✅ ATUALIZADO: Adicionamos 'color' e 'task'
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string; // Formato YYYY-MM-DD
+  type: 'birthday' | 'event' | 'task';
+  description?: string;
+  color?: string;
 }

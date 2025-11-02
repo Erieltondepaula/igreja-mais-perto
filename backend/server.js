@@ -1,47 +1,92 @@
 // Local do arquivo: backend/server.js
 
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
-const Member = require('./models/Member');
+// ✅ NOVA IMPORTAÇÃO: Substituindo MongoDB por Access
+const accessDB = require('./config/database');
+const MemberService = require('./services/MemberService');
+const AccessInitializer = require('./scripts/initializeAccess');
 
 const app = express();
 
 // Configuração do CORS para permitir a comunicação com o front-end
 const corsOptions = {
-  origin: 'http://localhost:8080',
+  origin: ['http://localhost:8080', 'http://localhost:5173'],
   optionsSuccessStatus: 200 
 };
 app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '10mb' })); 
 
-// Conectar ao Banco de Dados
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ Conectado ao MongoDB com sucesso!'))
-  .catch(err => console.error('❌ Falha ao conectar com o MongoDB:', err));
+// ✅ INICIALIZAÇÃO AUTOMÁTICA DO ACCESS
+async function initializeSystem() {
+  console.log('🔄 Inicializando sistema com Microsoft Access...');
+  
+  const initializer = new AccessInitializer();
+  const accessReady = await initializer.initialize();
+  
+  if (!accessReady) {
+    console.error('❌ Falha na inicialização do Access. Sistema não pode continuar.');
+    process.exit(1);
+  }
+  
+  // Conectar após inicialização bem-sucedida
+  try {
+    await accessDB.connect();
+    console.log('✅ Conectado ao Microsoft Access com sucesso!');
+  } catch (err) {
+    console.error('❌ Falha ao conectar com o Access:', err);
+    process.exit(1);
+  }
+}
 
 
 // --- ROTAS DA API ---
 
-// Rota para buscar TODOS os membros
+// ✅ NOVA ROTA: Buscar TODOS os membros do Access
 app.get('/api/members', async (req, res) => {
   try {
-    const members = await Member.find({}).sort({ nome: 1 });
+    const members = await MemberService.getAllMembers();
     res.json(members);
   } catch (error) {
     console.error("❌ Erro ao buscar membros:", error);
-    res.status(500).json({ message: 'Erro ao buscar membros.' });
+    res.status(500).json({ message: 'Erro ao buscar membros do Access.' });
   }
 });
 
-// Rota para ATUALIZAR um membro
+// ✅ NOVA ROTA: Buscar membro por ID
+app.get('/api/members/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const member = await MemberService.getMemberById(id);
+    if (!member) {
+        return res.status(404).json({ message: 'Membro não encontrado.' });
+    }
+    res.json(member);
+  } catch (error) {
+    console.error(`❌ Erro ao buscar membro ${req.params.id}:`, error);
+    res.status(500).json({ message: 'Erro ao buscar membro.' });
+  }
+});
+
+// ✅ NOVA ROTA: Criar novo membro
+app.post('/api/members', async (req, res) => {
+  try {
+    const newMember = await MemberService.createMember(req.body);
+    res.status(201).json(newMember);
+  } catch (error) {
+    console.error("❌ Erro ao criar membro:", error);
+    res.status(500).json({ message: 'Erro ao criar membro no Access.' });
+  }
+});
+
+// ✅ NOVA ROTA: Atualizar membro
 app.put('/api/members/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedMember = await Member.findByIdAndUpdate(id, req.body, { new: true });
+    const updatedMember = await MemberService.updateMember(id, req.body);
     if (!updatedMember) {
         return res.status(404).json({ message: 'Membro não encontrado.' });
     }
@@ -52,7 +97,19 @@ app.put('/api/members/:id', async (req, res) => {
   }
 });
 
-// Rota para ADICIONAR ou SUBSTITUIR membros em massa
+// ✅ NOVA ROTA: Deletar membro
+app.delete('/api/members/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await MemberService.deleteMember(id);
+    res.json({ message: 'Membro removido com sucesso!' });
+  } catch (error) {
+    console.error(`❌ Erro ao deletar membro ${req.params.id}:`, error);
+    res.status(500).json({ message: 'Erro ao deletar membro.' });
+  }
+});
+
+// ✅ NOVA ROTA: Importar membros em massa (do Excel para Access)
 app.post('/api/members/batch', async (req, res) => {
   console.log("➡️ [LOG] Recebida requisição em /api/members/batch");
   const { members, replaceAll } = req.body;
@@ -65,30 +122,56 @@ app.post('/api/members/batch', async (req, res) => {
   console.log(`➡️ [LOG] Recebidos ${members.length} membros. Substituir todos: ${replaceAll}`);
 
   try {
+    // Se replaceAll for true, limpar tabela primeiro
     if (replaceAll) {
-      console.log("➡️ [LOG] Deletando todos os membros existentes...");
-      await Member.deleteMany({});
-      console.log("✅ [LOG] Membros deletados.");
+      console.log("🗑️ [LOG] Limpando tabela de membros...");
+      await accessDB.execute("DELETE FROM Membros");
+      console.log("✅ [LOG] Tabela limpa com sucesso!");
     }
+
+    const results = await MemberService.importMembers(members);
     
-    const validMembers = members.filter(m => m && m.nome);
-    const membersToInsert = validMembers.map(({ id, ...rest }) => rest);
-
-    if (membersToInsert.length === 0) {
-      console.warn("⚠️ [AVISO] Nenhum membro válido para importar.");
-      return res.status(400).json({ message: "Nenhum membro válido para importar." });
-    }
-
-    console.log(`➡️ [LOG] Inserindo ${membersToInsert.length} novos membros...`);
-    const newMembers = await Member.insertMany(membersToInsert);
-    console.log("✅ [SUCESSO] Membros inseridos no banco de dados!");
-
-    res.status(201).json(newMembers);
+    const successCount = results.filter(r => r.success).length;
+    const errorCount = results.filter(r => !r.success).length;
+    
+    console.log(`✅ [LOG] Importação concluída: ${successCount} sucessos, ${errorCount} erros`);
+    
+    res.json({
+      message: `Importação concluída: ${successCount} membros importados com sucesso, ${errorCount} erros.`,
+      results,
+      stats: { success: successCount, errors: errorCount }
+    });
+    
   } catch (error) {
-    console.error("❌ [ERRO GRAVE] Falha ao salvar no banco:", error);
-    res.status(500).json({ message: 'Erro ao importar membros para o banco de dados.', error: error.message });
+    console.error("❌ [ERRO GRAVE] Falha na importação:", error);
+    res.status(500).json({ 
+      message: 'Erro ao importar membros para o Access.', 
+      error: error.message 
+    });
+  }
+});
+
+// ✅ NOVA ROTA: Estatísticas gerais
+app.get('/api/statistics', async (req, res) => {
+  try {
+    const stats = await MemberService.getStatistics();
+    res.json(stats);
+  } catch (error) {
+    console.error("❌ Erro ao buscar estatísticas:", error);
+    res.status(500).json({ message: 'Erro ao buscar estatísticas.' });
   }
 });
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+
+// ✅ INICIALIZAR SISTEMA E DEPOIS SUBIR SERVIDOR
+initializeSystem().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`📊 Banco Access: backend/database/MembrosDB.accdb`);
+    console.log(`🌐 API disponível em: http://localhost:${PORT}`);
+  });
+}).catch(error => {
+  console.error('❌ Falha crítica na inicialização:', error);
+  process.exit(1);
+});

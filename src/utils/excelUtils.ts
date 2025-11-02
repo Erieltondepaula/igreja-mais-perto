@@ -1,4 +1,5 @@
 // Local do arquivo: src/utils/excelUtils.ts
+// ✅ CÓDIGO CORRIGIDO PARA LER AS FUNÇÕES DA PLANILHA
 
 import * as XLSX from 'xlsx';
 import { Member } from '@/types/member';
@@ -13,6 +14,7 @@ const normalizeHeader = (header: string): string => {
     .replace(/[^a-z0-9_]/g, '');
 };
 
+// ✅ MAPEAMENTO ATUALIZADO: Adicionadas as colunas de função
 const REQUIRED_COLUMNS_MAP: Record<string, string[]> = {
   nome: ['nome'],
   dataNascimento: ['data_de_nascimento', 'data_nascimento'],
@@ -20,8 +22,8 @@ const REQUIRED_COLUMNS_MAP: Record<string, string[]> = {
   status: ['situacao_atual', 'status'],
   batizado: ['batizado_?','batizado'],
   membro: ['membro'],
-  lider: ['e_lider_?'],
-  professorEBQ: ['e_professor_ebq_?'],
+  lider: ['e_lider', 'lider', 'e_lider_?'], // Mapeia "e_lider?" e outras variações
+  professorEBQ: ['e_professor_ebq', 'professor_ebq', 'e_professor_ebq_?'], // Mapeia "e_professor_ebq?"
   telefone: ['telefone'],
   bairro: ['bairro'],
 };
@@ -35,7 +37,6 @@ const isYes = (value: unknown): boolean => {
 
 const parseDate = (value: unknown): string => {
   if (!value) return '';
-
   if (typeof value === 'number' && value > 1) {
     const date = XLSX.SSF.parse_date_code(value);
     if (date && date.y && date.m && date.d) {
@@ -43,11 +44,8 @@ const parseDate = (value: unknown): string => {
         return jsDate.toISOString().split('T')[0];
     }
   }
-
   if (typeof value === 'string') {
     const dateStr = value.trim();
-    
-    // CORREÇÃO: Adicionada a capacidade de ler o formato YYYY-MM-DD
     const isoMatch = dateStr.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
     if (isoMatch) {
       const [_, year, month, day] = isoMatch;
@@ -55,7 +53,6 @@ const parseDate = (value: unknown): string => {
           return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
       }
     }
-
     const ptMatch = dateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
     if (ptMatch) {
       const [_, day, month, year] = ptMatch;
@@ -64,10 +61,8 @@ const parseDate = (value: unknown): string => {
       }
     }
   }
-  
   return '';
 };
-
 
 export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
   return new Promise((resolve, reject) => {
@@ -78,7 +73,6 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
         const workbook = XLSX.read(data, { type: 'array', cellDates: false });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        
         const jsonData: Record<string, unknown>[] = XLSX.utils.sheet_to_json(worksheet, { raw: true });
         
         if (jsonData.length === 0) return reject(new Error('A planilha está vazia.'));
@@ -118,6 +112,7 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
                 status: String(getValue('status') || 'ativo').toLowerCase() as 'ativo' | 'desligado',
                 batizado: isYes(getValue('batizado')),
                 membro: isYes(getValue('membro')),
+                // ✅ CORREÇÃO: Lendo os valores de líder e professor
                 lider: isYes(getValue('lider')),
                 professorEBQ: isYes(getValue('professorEBQ')),
                 telefone: String(getValue('telefone') || ''),
@@ -133,6 +128,7 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
   });
 };
 
+// ... o resto do arquivo (exportToExcel) permanece o mesmo
 export const exportToExcel = (members: Member[], filename: string = 'membros-exportados') => {
   const dataToExport = members.map(member => ({
     'Nome': member.nome,
@@ -146,6 +142,8 @@ export const exportToExcel = (members: Member[], filename: string = 'membros-exp
     'Tipo': getMemberType(member),
     'Batizado': member.batizado ? 'Sim' : 'Não',
     'Membro': member.membro ? 'Sim' : 'Não',
+    'Líder': member.lider ? 'Sim' : 'Não', // Adicionado para exportação
+    'Professor EBQ': member.professorEBQ ? 'Sim' : 'Não', // Adicionado para exportação
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(dataToExport);

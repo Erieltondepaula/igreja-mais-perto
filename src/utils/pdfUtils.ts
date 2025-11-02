@@ -1,5 +1,5 @@
 // Local do arquivo: src/utils/pdfUtils.ts
-// ✅ CÓDIGO CORRIGIDO COM O NOVO LAYOUT
+// ✅ CÓDIGO CORRIGIDO COM O NOVO LAYOUT E TÍTULO DINÂMICO
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -10,13 +10,18 @@ const generateReportTitle = (filters: MemberFilters): string => {
   const descriptions: string[] = [];
   const formatDate = (dateStr: string) => new Date(dateStr + 'T00:00:00Z').toLocaleDateString('pt-BR');
 
+  // Casos especiais de aniversário que definem o título principal
   if (filters.aniversariantesDoDia) return "Relatório de Aniversariantes de Hoje";
   if (filters.aniversariantesDoMes) return "Relatório de Aniversariantes do Mês";
   if (filters.aniversariantesPeriodo?.dataInicial && filters.aniversariantesPeriodo?.dataFinal) {
     return `Aniversariantes de ${formatDate(filters.aniversariantesPeriodo.dataInicial)} a ${formatDate(filters.aniversariantesPeriodo.dataFinal)}`;
   }
 
-  if (filters.statusGeral) descriptions.push(`Membros ${filters.statusGeral}s`);
+  // Monta um título descritivo com base nos filtros gerais
+  if (filters.statusGeral) {
+    descriptions.push(`Status: ${filters.statusGeral === 'ativo' ? 'Ativos' : 'Desligados'}`);
+  }
+
   if (filters.tipoMembro && filters.tipoMembro.length > 0) {
     const tipos = filters.tipoMembro.map(t => {
         switch(t) {
@@ -26,9 +31,31 @@ const generateReportTitle = (filters: MemberFilters): string => {
             default: return '';
         }
     }).join(', ');
-    descriptions.push(tipos);
+    descriptions.push(`Tipo: ${tipos}`);
   }
-  if(filters.faixaEtaria) descriptions.push(`Faixa Etária: ${filters.faixaEtaria}`);
+  
+  if (filters.faixaEtaria) {
+    descriptions.push(`Faixa Etária: ${filters.faixaEtaria}`);
+  }
+  
+  if (filters.idadeRange) {
+    const { min, max } = filters.idadeRange;
+    if (min && max) {
+      descriptions.push(`Idade: ${min} a ${max} anos`);
+    } else if (min) {
+      descriptions.push(`Idade: A partir de ${min} anos`);
+    } else if (max) {
+      descriptions.push(`Idade: Até ${max} anos`);
+    }
+  }
+
+  if (filters.sexo) {
+    descriptions.push(`Sexo: ${filters.sexo === 'M' ? 'Masculino' : 'Feminino'}`);
+  }
+  
+  if (filters.bairro) {
+    descriptions.push(`Bairro: ${filters.bairro}`);
+  }
 
   if (descriptions.length > 0) {
     return `Relatório de Membros: ${descriptions.join(' | ')}`;

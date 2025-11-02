@@ -1,5 +1,5 @@
 // Local do arquivo: src/components/dashboard/ImportExport.tsx
-// ✅ CÓDIGO CORRIGIDO
+// ✅ CÓDIGO CORRIGIDO E SIMPLIFICADO
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,11 +31,8 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
     setLoading(true);
     try {
       const importedMembers = await importFromExcel(file);
-      onImport(importedMembers);
-      toast({
-        title: "Importação Concluída",
-        description: `${importedMembers.length} registros foram adicionados ou atualizados.`
-      });
+      // Usamos a função onImport, que agora substitui os dados.
+      onImport(importedMembers); 
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
         toast({
@@ -49,20 +46,14 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
     }
   };
 
-  // ✅ COLE ESTA NOVA FUNÇÃO NO LUGAR DA ANTIGA
-const handleExportPDF = () => {
+  const handleExportPDF = () => {
     const membersToExport = filteredMembers ?? members;
-
-    // Busca o logo e o nome da igreja no armazenamento
     const logoUrlRaw = localStorage.getItem('church-logo');
     const churchNameRaw = localStorage.getItem('church-name');
-
-    // Remove as aspas extras que causam o erro no PDF
     const logoUrl = logoUrlRaw ? JSON.parse(logoUrlRaw) : null;
     const churchName = churchNameRaw ? JSON.parse(churchNameRaw) : 'Relatório de Membros';
-
     exportToPDF(membersToExport, filters, logoUrl, churchName, 'relatorio-membros');
-};
+  };
 
   return (
     <Card>
@@ -74,9 +65,10 @@ const handleExportPDF = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* ✅ AGORA SÓ TEMOS UM BOTÃO DE IMPORTAR QUE SUBSTITUI */}
             <Button size="lg" onClick={() => fileInputRef.current?.click()} disabled={loading} className="md:col-span-1">
               <Upload className="h-4 w-4 mr-2" />
-              {loading ? 'Processando...' : 'Carregar Arquivo (XLSX, CSV)'}
+              {loading ? 'Processando...' : 'Importar Planilha (Substitui Tudo)'}
             </Button>
             <Button size="lg" onClick={() => exportToExcel(filteredMembers ?? members, 'membros-exportados')} variant="outline" className="md:col-span-1">
               <Download className="h-4 w-4 mr-2" />

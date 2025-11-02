@@ -1,18 +1,29 @@
 {
-  "name": "backend",
+  "name": "backend-access",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend para Dashboard de Membros com Microsoft Access",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "setup-db": "node scripts/setupDatabase.js",
+    "init-access": "node scripts/initializeAccess.js",
+    "health-check": "node scripts/healthCheck.js",
+    "health-quick": "node scripts/healthCheck.js quick",
+    "health-repair": "node scripts/healthCheck.js repair",
+    "import-excel": "node scripts/excelToAccess.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["access", "church", "members", "dashboard"],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
-    "mongoose": "^8.18.0"
+    "odbc": "^2.4.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
   }
 }
