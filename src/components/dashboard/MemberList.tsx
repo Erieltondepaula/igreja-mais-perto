@@ -12,7 +12,7 @@ import { MemberDetails } from './MemberDetails';
 import { MemberEdit } from './MemberEdit';
 import { calculateAge, getMemberType } from '@/utils/memberUtils';
 
-const ITEMS_PER_PAGE = 50;
+const ITEMS_PER_PAGE = 25;
 
 // ✅ NOVAS PROPRIEDADES PARA RECEBER O ESTADO DA ORDENAÇÃO
 interface MemberListProps {

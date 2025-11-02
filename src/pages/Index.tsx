@@ -1,18 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { StatsCards } from '@/components/dashboard/StatsCards';
 import { SummaryCards } from '@/components/dashboard/SummaryCards';
 import { MemberFilters as MemberFiltersComponent } from '@/components/dashboard/MemberFilters';
 import { MemberList } from '@/components/dashboard/MemberList';
-import { GenderChart } from '@/components/dashboard/GenderChart';
-import { AgeChart } from '@/components/dashboard/AgeChart';
-import { NeighborhoodMap } from '@/components/dashboard/NeighborhoodMap';
 import { ImportExport } from '@/components/dashboard/ImportExport';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Member, MemberFromDB, MemberFilters } from '@/types/member';
 import { filterMembers, calculateAge } from '@/utils/memberUtils';
 import { mockMembers } from '@/data/mockMembers';
-import { Header } from '@/components/dashboard/Header';
 
 const API_URL = 'http://localhost:5001/api/members';
 
@@ -141,13 +136,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
-        <Header members={members} onCardClick={handleCardClick} />
         <div className="text-center">
           <p className="text-xl text-muted-foreground">
             Sistema de gestão e controle de cadastro de membros
           </p>
         </div>
-        <StatsCards members={members} onCardClick={handleCardClick} />
         <SummaryCards ageDistribution={ageDistribution} onAgeGroupClick={(faixa) => handleChartClick('faixaEtaria', faixa)} />
         <ImportExport 
           members={members} 
@@ -161,10 +154,6 @@ const Index = () => {
           filters={filters} 
           onFiltersChange={handleFiltersChange} 
         />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <GenderChart members={activeMembers} onSegmentClick={(sexo) => handleChartClick('sexo', sexo)} />
-          <AgeChart members={activeMembers} onBarClick={(faixa) => handleChartClick('faixaEtaria', faixa)} />
-        </div>
         <div ref={memberListRef}>
           <MemberList 
             members={filteredMembers} 
@@ -175,7 +164,6 @@ const Index = () => {
             onSort={handleSort}
           />
         </div>
-        <NeighborhoodMap members={activeMembers} onNeighborhoodClick={(bairro) => handleChartClick('bairro', bairro)} />
       </div>
     </div>
   );

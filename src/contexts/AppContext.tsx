@@ -1,8 +1,9 @@
 // Local do arquivo: src/contexts/AppContext.tsx
 // ✅ CÓDIGO FINAL COM LÓGICA DE IMPORTAÇÃO CORRIGIDA
 
-import { createContext } from 'react';
+import { createContext, useState, useEffect, ReactNode } from 'react';
 import { Member, MemberFilters } from '@/types/member';
+import { useToast } from '@/hooks/use-toast';
 
 export interface AppContextType {
   members: Member[];
@@ -18,14 +19,15 @@ export interface AppContextType {
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  // Limpa localStorage ao carregar o contexto
-  useEffect(() => {
-    localStorage.removeItem('members-data');
-  }, []);
   const [members, setMembers] = useState<Member[]>([]);
   const [filters, setFilters] = useState<MemberFilters>({});
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Limpa localStorage ao carregar o contexto
+  useEffect(() => {
+    localStorage.removeItem('members-data');
+  }, []);
 
   // Buscar membros do backend ao carregar
   useEffect(() => {
@@ -42,7 +44,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     fetchMembers();
-  }, []);
+  }, [toast]);
 
   const onFiltersChange = (newFilters: MemberFilters) => {
     setFilters(newFilters);
