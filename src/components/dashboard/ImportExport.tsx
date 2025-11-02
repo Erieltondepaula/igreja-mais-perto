@@ -30,39 +30,22 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
 
     setLoading(true);
     try {
-      // 1. Envia a planilha para análise
-      const formData = new FormData();
-      formData.append('arquivo', file);
-  const analiseRes = await fetch('http://localhost:5001/api/importar', {
-        method: 'POST',
-        body: formData
-      });
-      const analise = await analiseRes.json();
-      if (!analise.sucesso) throw new Error(analise.erro || 'Erro na análise da planilha');
+      // Importa diretamente do Excel usando a função do excelUtils
+      const importedMembers = await importFromExcel(file);
+      
+      if (importedMembers.length === 0) {
+        throw new Error('Nenhum membro foi encontrado no arquivo');
+      }
 
-      // 2. Monta lote de ações para criar/atualizar membros
-      const acoes = analise.dados.map((linha: Partial<Member>) => ({
-        dadosLinha: linha,
-        acao: linha.acao === 'criar_novo' ? 'criar_novo' : (linha.acao === 'confirmar_atualizacao' ? 'atualizar' : 'ignorar')
-      }));
-
-      // 3. Envia lote para popular o banco
-      const loteRes = await fetch('http://localhost:5001/api/importacao/executar-lote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acoes })
-      });
-      const lote = await loteRes.json();
-      if (!lote.sucesso) throw new Error(lote.erro || 'Erro ao salvar dados no banco');
-
+      // Substitui todos os membros
+      onReplaceAll(importedMembers);
+      
       toast({
         title: 'Importação concluída',
-        description: `Processados: ${lote.processados}, Sucessos: ${lote.sucessos}, Erros: ${lote.erros}`,
-        variant: lote.erros > 0 ? 'destructive' : 'default'
+        description: `${importedMembers.length} membros importados com sucesso!`,
+        variant: 'default'
       });
 
-      // 4. Recarrega lista de membros do banco
-      onImport([]); // Chama função para recarregar membros
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
       toast({
