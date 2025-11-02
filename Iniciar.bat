@@ -42,8 +42,7 @@ echo.
 
 taskkill /F /IM node.exe >nul 2>&1
 
-cd dist
-start "SERVIDOR-DIST" cmd /k "title SERVIDOR-DIST && color 03 && http-server -p 8080 -a localhost"
+start "SERVIDOR-DIST" cmd /k "cd /d %~dp0dist && title SERVIDOR-DIST && color 03 && http-server -p 8080 -a localhost"
 
 timeout /t 5 /nobreak >nul
 
