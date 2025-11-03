@@ -109,10 +109,10 @@ const handleBirthdayFilterChange = (
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <Input placeholder="Pesquisar por nome..." value={filters.search || ''} onChange={e => handleFilterChange('search', e.target.value || undefined)} className="md:col-span-2" />
-          {/* ✅ CORREÇÃO: Passamos 'undefined' quando o valor for 'all' */}
+          {/* ✅ Por padrão mostra apenas ATIVOS, usuário pode selecionar Desligados explicitamente */}
           <Select value={filters.statusGeral || 'all'} onValueChange={value => handleFilterChange('statusGeral', value === 'all' ? undefined : value as 'ativo' | 'desligado')}>
-            <SelectTrigger><SelectValue placeholder="Status Geral" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Todos Status</SelectItem><SelectItem value="ativo">Ativos</SelectItem><SelectItem value="desligado">Desligados</SelectItem></SelectContent>
+            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Apenas Ativos</SelectItem><SelectItem value="ativo">Ativos</SelectItem><SelectItem value="desligado">Desligados</SelectItem></SelectContent>
           </Select>
           <Select value={filters.sexo || 'all'} onValueChange={value => handleFilterChange('sexo', value === 'all' ? undefined : value)}>
             <SelectTrigger><SelectValue placeholder="Sexo" /></SelectTrigger>

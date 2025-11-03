@@ -45,34 +45,80 @@ export const AppCalendar = () => {
   }, [editingEvent]);
   
   const parseDateAsLocal = (dateString: string): Date => {
-    return parse(dateString, 'yyyy-MM-dd', new Date());
+    // Se a data vem em formato ISO (com hora), extrair apenas a data
+    if (dateString.includes('T')) {
+      const isoDate = new Date(dateString);
+      if (isNaN(isoDate.getTime())) {
+        console.warn('Data ISO inválida:', dateString);
+        return new Date(); // Retorna data atual como fallback
+      }
+      return isoDate;
+    }
+    // Caso contrário, fazer parse do formato yyyy-MM-dd
+    const parsed = parse(dateString, 'yyyy-MM-dd', new Date());
+    if (isNaN(parsed.getTime())) {
+      console.warn('Data inválida:', dateString);
+      return new Date(); // Retorna data atual como fallback
+    }
+    return parsed;
   };
 
   const birthdays = useMemo((): CalendarEvent[] => {
     return members
       .filter(member => member.status === 'ativo' && member.dataNascimento)
-      .map((member) => ({
-        id: `birthday-${member.id}`,
-        title: `Aniversário de ${member.nome.split(' ')[0]}`,
-        date: member.dataNascimento,
-        type: 'birthday',
-      }));
+      .map((member) => {
+        // Converter data ISO para formato yyyy-MM-dd para o calendário
+        let dateForCalendar = member.dataNascimento;
+        if (dateForCalendar.includes('T')) {
+          const isoDate = new Date(dateForCalendar);
+          if (!isNaN(isoDate.getTime())) {
+            dateForCalendar = format(isoDate, 'yyyy-MM-dd');
+          }
+        }
+        return {
+          id: `birthday-${member.id}`,
+          title: `Aniversário de ${member.nome.split(' ')[0]}`,
+          date: dateForCalendar,
+          type: 'birthday',
+        };
+      });
   }, [members]);
 
   const allEvents = useMemo(() => [...birthdays, ...events], [birthdays, events]);
 
   const eventsByDayOfYear = useMemo(() => {
     return allEvents.reduce((acc, event) => {
-        const eventDate = parseDateAsLocal(event.date);
-        const key = format(eventDate, 'MM-dd');
-        if (!acc[key]) {
-            acc[key] = { hasBirthday: false, hasEvent: false };
+        try {
+          const eventDate = parseDateAsLocal(event.date);
+          // Validar se a data é válida
+          if (isNaN(eventDate.getTime())) {
+            console.warn('Data inválida no evento:', event);
+            return acc;
+          }
+          const key = format(eventDate, 'MM-dd');
+          if (!acc[key]) {
+              acc[key] = { hasMale: false, hasFemale: false, hasEvent: false };
+          }
+          
+          // ✅ CORREÇÃO: Verificar sexo do aniversariante
+          if (event.type === 'birthday') {
+            // Buscar o membro correspondente para verificar o sexo
+            const member = members.find(m => `birthday-${m.id}` === event.id);
+            if (member) {
+              if (member.sexo === 'M') {
+                acc[key].hasMale = true;
+              } else if (member.sexo === 'F') {
+                acc[key].hasFemale = true;
+              }
+            }
+          }
+          if (event.type === 'event') acc[key].hasEvent = true;
+        } catch (error) {
+          console.error('Erro ao processar evento:', event, error);
         }
-        if (event.type === 'birthday') acc[key].hasBirthday = true;
-        if (event.type === 'event') acc[key].hasEvent = true;
         return acc;
-    }, {} as Record<string, { hasBirthday: boolean, hasEvent: boolean }>);
-  }, [allEvents]);
+    }, {} as Record<string, { hasMale: boolean, hasFemale: boolean, hasEvent: boolean }>);
+  }, [allEvents, members]);
 
   // ✅ CORREÇÃO: Nova lógica para filtrar eventos do dia selecionado
   const eventsForSelectedDay = useMemo(() => {
@@ -101,8 +147,12 @@ export const AppCalendar = () => {
       <div className="relative h-full w-full flex items-center justify-center">
         <span>{format(props.date, 'd')}</span>
         <div className="absolute bottom-1 flex space-x-0.5">
-          {dayEvents?.hasBirthday && <div className="h-1.5 w-1.5 rounded-full bg-pink-500" />}
-          {dayEvents?.hasEvent && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
+          {/* ✅ AZUL para homens (M) */}
+          {dayEvents?.hasMale && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
+          {/* ✅ ROSA para mulheres (F) */}
+          {dayEvents?.hasFemale && <div className="h-1.5 w-1.5 rounded-full bg-pink-500" />}
+          {/* Eventos customizados */}
+          {dayEvents?.hasEvent && <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
         </div>
       </div>
     );
@@ -143,11 +193,13 @@ export const AppCalendar = () => {
     }
   };
   
-  const EventIcon = ({ type }: { type: CalendarEvent['type'] }) => {
-    if (type === 'birthday') {
-      return <Cake className="h-4 w-4 text-pink-500 mr-2 flex-shrink-0" />;
+  const EventIcon = ({ event }: { event: CalendarEvent }) => {
+    if (event.type === 'birthday') {
+      const member = members.find(m => `birthday-${m.id}` === event.id);
+      const colorClass = member?.sexo === 'M' ? 'text-blue-500' : 'text-pink-500';
+      return <Cake className={`h-4 w-4 ${colorClass} mr-2 flex-shrink-0`} />;
     }
-    return <CalendarIcon className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />;
+    return <CalendarIcon className="h-4 w-4 text-amber-500 mr-2 flex-shrink-0" />;
   };
 
   return (
@@ -203,7 +255,7 @@ export const AppCalendar = () => {
                       className={`text-sm p-2 bg-muted/50 rounded-md flex items-center ${isClickable ? 'cursor-pointer hover:bg-muted' : ''}`}
                       onClick={() => isClickable && openEditModal(event)}
                     >
-                        <EventIcon type={event.type} />
+                        <EventIcon event={event} />
                         <div className="flex-grow">
                             <span className="font-medium">{event.title}</span>
                         </div>

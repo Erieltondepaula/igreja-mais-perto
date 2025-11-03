@@ -29,10 +29,24 @@ const getTodayInBrasilia = () => {
 };
 
 /**
- * Analisa uma string de data 'YYYY-MM-DD' e retorna suas partes numéricas.
+ * Analisa uma string de data 'YYYY-MM-DD' ou ISO (com hora) e retorna suas partes numéricas.
  */
 const parseDateString = (dateString: string): { year: number; month: number; day: number } | null => {
-  if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+  if (!dateString) return null;
+  
+  // Se a data está em formato ISO (com T e hora)
+  if (dateString.includes('T')) {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1, // getMonth() retorna 0-11, precisamos 1-12
+      day: date.getDate()
+    };
+  }
+  
+  // Formato padrão YYYY-MM-DD
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return null;
   }
   const [year, month, day] = dateString.split('-').map(Number);
@@ -114,15 +128,24 @@ export const getMemberType = (member: Member): 'Membro' | 'Batizado Congregado' 
     return 'Congregado';
 };
 
-// --- FUNÇÃO DE FILTRO COMPLETA (sem alterações) ---
+// --- FUNÇÃO DE FILTRO COMPLETA ---
 export const filterMembers = (members: Member[], filters: MemberFilters): Member[] => {
   return members.filter(member => {
     if (!member.dataNascimento) return false; // Garante que membros sem data não quebrem o filtro
     
     const age = calculateAge(member.dataNascimento);
 
+    // ✅ REGRA PRINCIPAL: Por padrão, mostra apenas membros ATIVOS
+    // Só mostra desligados se explicitamente filtrado por statusGeral='desligado'
+    if (filters.statusGeral) {
+      // Se o usuário selecionou um status específico, aplica o filtro
+      if (member.status !== filters.statusGeral) return false;
+    } else {
+      // Se não há filtro de status, mostra apenas ATIVOS por padrão
+      if (member.status !== 'ativo') return false;
+    }
+
     if (filters.search && !member.nome.toLowerCase().includes(filters.search.toLowerCase())) return false;
-    if (filters.statusGeral && member.status !== filters.statusGeral) return false;
     
     // ✅ ALTERADO: Lógica para filtrar por intervalo de idade
     if (filters.idadeRange) {
