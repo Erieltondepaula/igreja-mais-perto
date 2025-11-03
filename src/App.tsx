@@ -9,6 +9,8 @@ import { Layout } from '@/components/layout/Layout';
 import Index from '@/pages/Index';
 import Analytics from '@/pages/Analytics';
 import CalendarPage from '@/pages/CalendarPage';
+import ImportacaoPage from '@/pages/ImportacaoPage';
+import ConversorPage from '@/pages/ConversorPage';
 import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ function App() {
                 <Route index element={<Index />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="calendar" element={<CalendarPage />} />
+                <Route path="importacao" element={<ImportacaoPage />} />
+                <Route path="conversor" element={<ConversorPage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

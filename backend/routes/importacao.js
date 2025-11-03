@@ -228,4 +228,38 @@ router.get('/verificar-usuario/:idExterno', async (req, res) => {
   }
 });
 
+// 6. IMPORTAÇÃO COMPLETA - Substitui tudo (novo método)
+router.post('/importar-completo', upload.single('arquivo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        sucesso: false,
+        erro: 'Nenhum arquivo foi enviado'
+      });
+    }
+
+    console.log('📁 Iniciando importação completa:', req.file.originalname);
+    
+    // Usar o serviço de importação completa
+    const resultado = await importacaoService.importarCompleto(req.file.path);
+    
+    // Limpar arquivo temporário
+    try {
+      fs.unlinkSync(req.file.path);
+      console.log('🗑️ Arquivo temporário removido');
+    } catch (err) {
+      console.error('Erro ao remover arquivo:', err);
+    }
+    
+    res.json(resultado);
+
+  } catch (error) {
+    console.error('Erro na importação completa:', error);
+    res.status(500).json({
+      sucesso: false,
+      erro: 'Erro interno do servidor: ' + error.message
+    });
+  }
+});
+
 module.exports = router;

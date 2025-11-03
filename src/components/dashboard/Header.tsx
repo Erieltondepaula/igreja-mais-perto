@@ -29,21 +29,51 @@ export const Header = ({ members, onCardClick }: HeaderProps) => {
     desligados: members.length - activeMembers.length,
     homens: activeMembers.filter(m => m.sexo === 'M').length,
     mulheres: activeMembers.filter(m => m.sexo === 'F').length,
-    batizados: members.filter(m => m.batizado).length,
+    batizados: activeMembers.filter(m => m.batizado).length, // ✅ Apenas membros ativos
   };
-  const naoBatizados = stats.totalMembros - stats.batizados;
+  const naoBatizados = stats.ativos - stats.batizados; // ✅ Apenas ativos
 
   const handleNameSave = () => {
     setChurchName(tempName);
     setIsEditingName(false);
   };
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => setLogoUrl(e.target?.result as string);
-    reader.readAsDataURL(file);
+    
+    console.log('📸 Logo selecionada:', file.name);
+    
+    const formData = new FormData();
+    formData.append('avatar', file); // A rota espera 'avatar'
+    
+    try {
+      console.log('🔄 Enviando logo para o servidor...');
+      const res = await fetch('http://localhost:5001/api/upload-avatar', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Erro HTTP: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log('✅ Logo enviada:', data);
+      
+      if (data.avatar_url) {
+        // Salvar URL completa
+        const fullUrl = `http://localhost:5001${data.avatar_url}`;
+        setLogoUrl(fullUrl);
+        console.log('✅ Logo URL atualizada:', fullUrl);
+      }
+    } catch (err) {
+      console.error('❌ Erro ao fazer upload da logo:', err);
+      // Fallback: usar FileReader para preview local
+      const reader = new FileReader();
+      reader.onload = (e) => setLogoUrl(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   return (

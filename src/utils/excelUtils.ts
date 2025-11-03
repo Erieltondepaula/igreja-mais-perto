@@ -14,18 +14,37 @@ const normalizeHeader = (header: string): string => {
     .replace(/[^a-z0-9_]/g, '');
 };
 
-// ✅ MAPEAMENTO ATUALIZADO: Adicionadas as colunas de função
+// ✅ MAPEAMENTO COMPLETO: Todas as colunas do arquivo original
 const REQUIRED_COLUMNS_MAP: Record<string, string[]> = {
+  id: ['id'],
+  idExterno: ['id_externo'],
   nome: ['nome'],
+  sobrenome: ['sobrenome'],
+  nomeCompleto: ['nome_completo'],
   dataNascimento: ['data_de_nascimento', 'data_nascimento'],
+  idade: ['idade'],
+  mes: ['mes'],
   sexo: ['sexo'],
-  status: ['situacao_atual', 'status'],
-  batizado: ['batizado_?','batizado'],
-  membro: ['membro'],
-  lider: ['e_lider', 'lider', 'e_lider_?'], // Mapeia "e_lider?" e outras variações
-  professorEBQ: ['e_professor_ebq', 'professor_ebq', 'e_professor_ebq_?'], // Mapeia "e_professor_ebq?"
   telefone: ['telefone'],
+  observacoes: ['observacoes'],
+  statusCivil: ['status_civil'],
+  conjuge: ['nome_conjuge', 'conjuge'],
+  parentesco: ['parentesco'],
+  rua: ['rua'],
+  numero: ['numero'],
   bairro: ['bairro'],
+  cidade: ['cidade'],
+  estado: ['estado'],
+  cep: ['cep'],
+  status: ['situacao_atual', 'status'],
+  batizado: ['batizado', 'batizado_?'],
+  membro: ['membro'],
+  lider: ['e_lider', 'lider', 'e_lider_?'],
+  professorEBQ: ['e_professor_ebq', 'professor_ebq', 'e_professor_ebq_?'],
+  faixaEtaria: ['faixa_etaria'],
+  pequenoGrupo: ['esta_em_um_pequeno_grupo_?', 'pequeno_grupo'],
+  grupo: ['grupo'],
+  numeroDomes: ['numerodomes', 'numero_domes']
 };
 
 const ESSENTIAL_KEYS: Array<keyof typeof REQUIRED_COLUMNS_MAP> = ['nome', 'dataNascimento', 'sexo'];
@@ -33,6 +52,11 @@ const ESSENTIAL_KEYS: Array<keyof typeof REQUIRED_COLUMNS_MAP> = ['nome', 'dataN
 const isYes = (value: unknown): boolean => {
   const str = String(value || '').trim().toLowerCase();
   return ['sim', 's', 'true', '1', 'yes', 'y'].includes(str);
+};
+
+const isAtivo = (value: unknown): 'ativo' | 'desligado' => {
+  const str = String(value || '').trim().toLowerCase();
+  return ['ativo', 'active', 'sim', 's'].includes(str) ? 'ativo' : 'desligado';
 };
 
 const parseDate = (value: unknown): string => {
@@ -103,20 +127,44 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
             const sexoRaw = String(getValue('sexo') || '').toLowerCase();
             const sexo = sexoRaw.startsWith('masc') ? 'M' : 'F';
 
+            // Extrai mês da data de nascimento
+            const dateParts = dataNascimento.split('-');
+            const monthNumber = parseInt(dateParts[1]);
+            const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
+                          'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+            const mes = meses[monthNumber - 1] || '';
+
             return {
+                id: String(getValue('id') || ''),
+                idExterno: String(getValue('idExterno') || ''),
                 nome: String(getValue('nome') || ''),
+                sobrenome: String(getValue('sobrenome') || ''),
+                nomeCompleto: String(getValue('nomeCompleto') || getValue('nome') || ''),
                 dataNascimento,
                 idade: idade,
+                mes: mes,
                 faixaEtaria: getAgeGroup(idade),
                 sexo,
-                status: String(getValue('status') || 'ativo').toLowerCase() as 'ativo' | 'desligado',
+                telefone: String(getValue('telefone') || ''),
+                observacoes: String(getValue('observacoes') || ''),
+                statusCivil: String(getValue('statusCivil') || ''),
+                conjuge: String(getValue('conjuge') || ''),
+                parentesco: String(getValue('parentesco') || ''),
+                rua: String(getValue('rua') || ''),
+                numero: String(getValue('numero') || ''),
+                bairro: String(getValue('bairro') || ''),
+                cidade: String(getValue('cidade') || ''),
+                estado: String(getValue('estado') || ''),
+                cep: String(getValue('cep') || ''),
+                status: isAtivo(getValue('status')),
+                situacao_atual: String(getValue('status') || ''),  // ← ADICIONAR ESTE CAMPO!
                 batizado: isYes(getValue('batizado')),
                 membro: isYes(getValue('membro')),
-                // ✅ CORREÇÃO: Lendo os valores de líder e professor
                 lider: isYes(getValue('lider')),
                 professorEBQ: isYes(getValue('professorEBQ')),
-                telefone: String(getValue('telefone') || ''),
-                bairro: String(getValue('bairro') || ''),
+                pequeno_grupo: isYes(getValue('pequenoGrupo')),
+                grupo: String(getValue('grupo') || ''),
+                numero_domes: getValue('numeroDomes') ? parseInt(String(getValue('numeroDomes'))) : undefined,
             };
         });
         resolve(members);
@@ -131,19 +179,35 @@ export const importFromExcel = (file: File): Promise<Partial<Member>[]> => {
 // ... o resto do arquivo (exportToExcel) permanece o mesmo
 export const exportToExcel = (members: Member[], filename: string = 'membros-exportados') => {
   const dataToExport = members.map(member => ({
-    'Nome': member.nome,
-    'Data de Nascimento': member.dataNascimento ? new Date(member.dataNascimento + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '',
-    'Idade': calculateAge(member.dataNascimento),
-    'Faixa Etária': member.faixaEtaria,
-    'Sexo': member.sexo === 'M' ? 'Masculino' : 'Feminino',
-    'Telefone': member.telefone,
-    'Bairro': member.bairro,
-    'Status': member.status === 'ativo' ? 'Ativo' : 'Desligado',
-    'Tipo': getMemberType(member),
-    'Batizado': member.batizado ? 'Sim' : 'Não',
-    'Membro': member.membro ? 'Sim' : 'Não',
-    'Líder': member.lider ? 'Sim' : 'Não', // Adicionado para exportação
-    'Professor EBQ': member.professorEBQ ? 'Sim' : 'Não', // Adicionado para exportação
+    'Id': member.id || '',
+    'id_externo': member.idExterno || '',
+    'nome': member.nome || '',
+    'sobrenome': member.sobrenome || '',
+    'Nome Completo': member.nomeCompleto || member.nome || '',
+    'data_nascimento': member.dataNascimento ? new Date(member.dataNascimento + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '',
+    'idade': calculateAge(member.dataNascimento),
+    'mes': member.mes || '',
+    'telefone': member.telefone || '',
+    'sexo': member.sexo === 'M' ? 'Masculino' : 'Feminino',
+    'observacoes': member.observacoes || '',
+    'status_civil': member.statusCivil || '',
+    'nome_conjuge ': member.conjuge || '',
+    'parentesco ': member.parentesco || '',
+    'rua': member.rua || '',
+    'numero': member.numero || '',
+    'bairro': member.bairro || '',
+    'cidade': member.cidade || '',
+    'estado': member.estado || '',
+    'cep': member.cep || '',
+    'batizado': member.batizado ? 'Sim' : 'Não',
+    'membro': member.membro ? 'Sim' : 'Não',
+    'situacao_atual': member.status === 'ativo' ? 'Ativo' : 'Desligado',
+    'e_lider': member.lider ? 'Sim' : 'Não',
+    'e_professor_ebq\n': member.professorEBQ ? 'Sim' : 'Não',
+    'faixa_etaria ': member.faixaEtaria || '',
+    'Está em um pequeno grupo ?': member.pequeno_grupo ? 'Sim' : 'Não',
+    'grupo': member.grupo || '',
+    'numerodomes': member.numero_domes || ''
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(dataToExport);

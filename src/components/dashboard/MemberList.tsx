@@ -1,16 +1,19 @@
 // Local do arquivo: src/components/dashboard/MemberList.tsx
 
 import { useState, useMemo } from 'react';
-import { Member } from '@/types/member';
+import { Member, MemberFilters } from '@/types/member';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, ArrowUpDown, ArrowUp, ArrowDown, Edit, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Eye, ArrowUpDown, ArrowUp, ArrowDown, Edit, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { MemberDetails } from './MemberDetails';
 import { MemberEdit } from './MemberEdit';
 import { calculateAge, getMemberType } from '@/utils/memberUtils';
+import { exportToPDF } from '@/utils/pdfUtils';
 
 const ITEMS_PER_PAGE = 25;
 
@@ -22,6 +25,7 @@ interface MemberListProps {
   sortField: keyof Member | 'idade' | 'tipo' | null;
   sortDirection: 'asc' | 'desc';
   onSort: (field: keyof Member | 'idade' | 'tipo') => void;
+  filters?: MemberFilters; // Adiciona filtros para o PDF
 }
 
 const MemberTypeBadge = ({ type }: { type: string }) => {
@@ -47,12 +51,35 @@ const MemberTypeBadge = ({ type }: { type: string }) => {
   return <Badge className={getVariantClass()}>{type}</Badge>;
 };
 
-export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sortDirection, onSort }: MemberListProps) => {
+export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sortDirection, onSort, filters = {} }: MemberListProps) => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Estados para configuração do PDF
+  const [isPdfConfigOpen, setIsPdfConfigOpen] = useState(false);
+  const [showAge, setShowAge] = useState(true);
+  const [showPhoto, setShowPhoto] = useState(true);
+  const [showBirthdayWeekday, setShowBirthdayWeekday] = useState(true);
+
+  // Abre o modal de configuração do PDF
+  const handleOpenPdfConfig = () => {
+    setIsPdfConfigOpen(true);
+  };
+
+  // Função para exportar PDF mantendo a ordenação atual
+  const handleExportPDF = () => {
+    const logoUrlRaw = localStorage.getItem('church-logo');
+    const churchNameRaw = localStorage.getItem('church-name');
+    const logoUrl = logoUrlRaw ? JSON.parse(logoUrlRaw) : null;
+    const churchName = churchNameRaw ? JSON.parse(churchNameRaw) : 'Relatório de Membros';
+    
+    // ✅ Usa members que já está ordenado
+    exportToPDF(members, filters, logoUrl, churchName, 'relatorio-membros', showAge, showPhoto, showBirthdayWeekday);
+    setIsPdfConfigOpen(false);
+  };
 
   // ✅ Usa os membros já ordenados que vêm do componente pai
   const totalPages = Math.ceil(members.length / ITEMS_PER_PAGE);
@@ -102,10 +129,16 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
               </span>
             )}
           </CardTitle>
-          <Button variant="outline" size="sm" onClick={onRefresh}>
-            <RefreshCw className={'h-4 w-4 mr-2'} />
-            Atualizar Lista
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleOpenPdfConfig}>
+              <FileText className="h-4 w-4 mr-2" />
+              Exportar para PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={onRefresh}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar Lista
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -153,9 +186,16 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
                     )}
                   </TableCell>
                   {/* ✅ COLUNA DO NOME */}
-                  <TableCell className="font-medium">{member.nome || 'N/A'}</TableCell>
+                  <TableCell className="font-medium">
+                    {(member.nomeCompleto || member.nome || 'N/A').toUpperCase()}
+                  </TableCell>
                   {/* ✅ COLUNA DA DATA DE NASCIMENTO */}
-                  <TableCell>{member.dataNascimento ? new Date(member.dataNascimento + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A'}</TableCell>
+                  <TableCell>
+                    {member.dataNascimento ? (() => {
+                      const date = new Date(member.dataNascimento);
+                      return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('pt-BR');
+                    })() : 'N/A'}
+                  </TableCell>
                   {/* ✅ COLUNA DA IDADE */}
                   <TableCell>{calculateAge(member.dataNascimento)} anos</TableCell>
                   {/* ✅ COLUNA DO TIPO */}
@@ -249,13 +289,71 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
         )}
         
         {members.length === 0 && (<div className="text-center py-8 text-muted-foreground">Nenhum membro encontrado com os filtros aplicados.</div>)}
+        
+        {/* Modal de Detalhes do Membro */}
         <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
           <DialogContent className="max-w-3xl">
             <DialogHeader><DialogTitle>Detalhes do Membro</DialogTitle></DialogHeader>
             {selectedMember && <MemberDetails member={selectedMember} onMemberUpdate={onMemberUpdate} />}
           </DialogContent>
         </Dialog>
+        
+        {/* Modal de Edição do Membro */}
         <MemberEdit member={editingMember} isOpen={isEditOpen} onClose={() => setEditingMember(null)} onSave={handleSaveEdit} />
+        
+        {/* Modal de Configuração do PDF */}
+        <Dialog open={isPdfConfigOpen} onOpenChange={setIsPdfConfigOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Configurações de Exportação PDF</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="show-age" 
+                  checked={showAge} 
+                  onCheckedChange={(checked) => setShowAge(!!checked)}
+                />
+                <Label htmlFor="show-age" className="cursor-pointer">
+                  Incluir coluna de Idade
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="show-photo" 
+                  checked={showPhoto} 
+                  onCheckedChange={(checked) => setShowPhoto(!!checked)}
+                />
+                <Label htmlFor="show-photo" className="cursor-pointer">
+                  Incluir fotos dos membros
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="show-birthday-weekday" 
+                  checked={showBirthdayWeekday} 
+                  onCheckedChange={(checked) => setShowBirthdayWeekday(!!checked)}
+                />
+                <Label htmlFor="show-birthday-weekday" className="cursor-pointer">
+                  Incluir próximo aniversário (dia da semana)
+                </Label>
+              </div>
+              <div className="text-sm text-muted-foreground border-t pt-3">
+                <p>📊 Total de registros: <strong>{members.length}</strong></p>
+                <p>📄 A ordenação atual da lista será mantida no PDF</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPdfConfigOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleExportPDF}>
+                <FileText className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

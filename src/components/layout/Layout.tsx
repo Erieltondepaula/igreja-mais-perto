@@ -2,7 +2,7 @@
 // ✅ CÓDIGO FINAL COM O CALENDÁRIO DE VOLTA NA SIDEBAR
 
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { BarChart2, Users, CalendarDays, Upload } from "lucide-react";
+import { BarChart2, Users, CalendarDays, Upload, FileSpreadsheet } from "lucide-react";
 import { Header } from "@/components/dashboard/Header";
 import { useAppContext } from "@/contexts/useAppContext";
 import { AppCalendar } from "@/components/dashboard/Calendar"; // Importar o calendário da sidebar
@@ -46,6 +46,12 @@ export const Layout = () => {
             </NavLink>
             <NavLink to="/calendar" className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive && "bg-muted text-primary"}`}>
                 <CalendarDays className="h-4 w-4" /> Calendário Completo
+            </NavLink>
+            <NavLink to="/importacao" className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive && "bg-muted text-primary"}`}>
+                <Upload className="h-4 w-4" /> Importação Interativa
+            </NavLink>
+            <NavLink to="/conversor" className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive && "bg-muted text-primary"}`}>
+                <FileSpreadsheet className="h-4 w-4" /> Conversor de Arquivos
             </NavLink>
             </nav>
         </div>

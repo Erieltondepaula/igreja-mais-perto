@@ -40,6 +40,7 @@ class MemberServicePostgreSQL {
         pequeno_grupo,
         grupo,
         numerodomes,
+        avatar_url,
         created_at,
         updated_at
       FROM membros 
@@ -90,6 +91,7 @@ class MemberServicePostgreSQL {
         pequeno_grupo,
         grupo,
         numerodomes,
+        avatar_url,
         created_at,
         updated_at
       FROM membros 
@@ -167,6 +169,19 @@ class MemberServicePostgreSQL {
   // ATUALIZAR MEMBRO
   // ===================================
   async updateMember(id, memberData) {
+    // Buscar dados atuais do membro
+    const currentMember = await this.getMemberById(id);
+    if (!currentMember) {
+      return null;
+    }
+
+    // Mesclar dados atuais com novos dados (preserva campos não enviados)
+    const mergedData = {
+      ...currentMember,
+      ...memberData,
+      id // Garantir que o ID não mude
+    };
+
     const sql = `
       UPDATE membros SET
         id_externo = $2,
@@ -197,42 +212,44 @@ class MemberServicePostgreSQL {
         pequeno_grupo = $27,
         grupo = $28,
         numerodomes = $29,
-        updated_at = $30
+        avatar_url = $30,
+        updated_at = $31
       WHERE id = $1
       RETURNING id
     `;
 
     const params = [
       id,
-      memberData.id_externo || null,
-      memberData.nome,
-      memberData.sobrenome,
-      memberData.nome_completo,
-      memberData.data_nascimento,
-      memberData.idade,
-      memberData.mes,
-      memberData.telefone,
-      memberData.sexo,
-      memberData.observacoes,
-      memberData.status_civil,
-      memberData.conjuge,
-      memberData.parentesco,
-      memberData.rua,
-      memberData.numero,
-      memberData.bairro,
-      memberData.cidade,
-      memberData.estado,
-      memberData.cep,
-      memberData.batizado,
-      memberData.membro,
-      memberData.situacao_atual,
-      memberData.lider,
-      memberData.e_professor_ebq,
-      memberData.faixa_etaria,
-      memberData.pequeno_grupo,
-      memberData.grupo,
-      memberData.numerodomes,
-      memberData.updated_at || new Date()
+      mergedData.id_externo || null,
+      mergedData.nome,
+      mergedData.sobrenome,
+      mergedData.nome_completo,
+      mergedData.data_nascimento,
+      mergedData.idade,
+      mergedData.mes,
+      mergedData.telefone,
+      mergedData.sexo,
+      mergedData.observacoes,
+      mergedData.status_civil,
+      mergedData.conjuge,
+      mergedData.parentesco,
+      mergedData.rua,
+      mergedData.numero,
+      mergedData.bairro,
+      mergedData.cidade,
+      mergedData.estado,
+      mergedData.cep,
+      mergedData.batizado,
+      mergedData.membro,
+      mergedData.situacao_atual,
+      mergedData.lider,
+      mergedData.e_professor_ebq,
+      mergedData.faixa_etaria,
+      mergedData.pequeno_grupo,
+      mergedData.grupo,
+      mergedData.numerodomes,
+      mergedData.avatar_url || null,
+      new Date()
     ];
 
     try {
@@ -266,80 +283,188 @@ class MemberServicePostgreSQL {
   }
 
   // ===================================
-  // IMPORTAR MÚLTIPLOS MEMBROS COM TRANSAÇÃO
+  // IMPORTAR MÚLTIPLOS MEMBROS COM TRANSAÇÃO (UPSERT)
   // ===================================
   async importMembers(membersArray) {
     const results = [];
     
     try {
-      // Usar transação para garantir consistência
-      const operations = membersArray.map(memberData => ({
-        sql: `
-          INSERT INTO membros (
-            nome, nome_completo, photo_url, data_nascimento, sexo, telefone, email,
-            endereco, rua, numero, bairro, cidade, estado, cep, status,
-            status_civil, conjuge, parentesco, batizado, membro, lider, professor_ebq,
-            pequeno_grupo, grupo, numero_domes, data_batismo, data_membresia,
-            data_desligamento, observacoes
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-            $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
-          ) RETURNING id
-        `,
-        params: [
-          memberData.nome,
-          memberData.nome_completo || memberData.nomeCompleto,
-          memberData.photo_url || memberData.photoUrl,
-          memberData.data_nascimento || memberData.dataNascimento,
-          memberData.sexo,
-          memberData.telefone,
-          memberData.email,
-          memberData.endereco,
-          memberData.rua,
-          memberData.numero,
-          memberData.bairro,
-          memberData.cidade,
-          memberData.estado,
-          memberData.cep,
-          memberData.status || 'ativo',
-          memberData.status_civil || memberData.statusCivil,
-          memberData.conjuge,
-          memberData.parentesco,
-          memberData.batizado || false,
-          memberData.membro || false,
-          memberData.lider || false,
-          memberData.professor_ebq || memberData.professorEBQ || false,
-          memberData.pequeno_grupo || false,
-          memberData.grupo,
-          memberData.numero_domes,
-          memberData.data_batismo || memberData.dataBatismo,
-          memberData.data_membresia || memberData.dataMembresia,
-          memberData.data_desligamento || memberData.dataDesligamento,
-          memberData.observacoes
-        ]
-      }));
+      // Função para aguardar (delay)
+      const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-      // Executar em lotes para melhor performance
-      for (let i = 0; i < operations.length; i += 50) { // Lotes de 50
-        const batch = operations.slice(i, i + 50);
+      // Executar cada inserção/atualização
+      for (let i = 0; i < membersArray.length; i++) {
+        const memberData = membersArray[i];
         
-        for (const operation of batch) {
-          try {
-            const result = await db.execute(operation.sql, operation.params);
-            const newId = result.rows[0]?.id;
-            results.push({ 
-              success: true, 
-              id: newId,
-              member: { nome: operation.params[0] }
-            });
-          } catch (error) {
-            console.error(`❌ Erro ao importar membro ${operation.params[0]}:`, error.message);
-            results.push({ 
-              success: false, 
-              error: error.message,
-              data: { nome: operation.params[0] }
-            });
+        try {
+          const nomeCompleto = memberData.nomeCompleto || memberData.nome_completo || `${memberData.nome || ''} ${memberData.sobrenome || ''}`.trim();
+          const dataNascimento = memberData.dataNascimento || memberData.data_nascimento;
+          
+          // 🔍 VERIFICAR SE JÁ EXISTE (por nome completo + data nascimento)
+          const existingMember = await db.query(
+            'SELECT id FROM membros WHERE LOWER(nome_completo) = LOWER($1) AND data_nascimento = $2 LIMIT 1',
+            [nomeCompleto, dataNascimento]
+          );
+          
+          let resultId;
+          let action;
+          
+          if (existingMember.length > 0) {
+            // ✏️ MEMBRO JÁ EXISTE - FAZER UPDATE
+            const existingId = existingMember[0].id;
+            action = 'updated';
+            
+            const updateSql = `
+              UPDATE membros SET
+                id_externo = $1,
+                nome = $2,
+                sobrenome = $3,
+                nome_completo = $4,
+                data_nascimento = $5,
+                idade = $6,
+                mes = $7,
+                telefone = $8,
+                sexo = $9,
+                observacoes = $10,
+                status_civil = $11,
+                conjuge = $12,
+                parentesco = $13,
+                rua = $14,
+                numero = $15,
+                bairro = $16,
+                cidade = $17,
+                estado = $18,
+                cep = $19,
+                batizado = $20,
+                membro = $21,
+                situacao_atual = $22,
+                lider = $23,
+                e_professor_ebq = $24,
+                faixa_etaria = $25,
+                pequeno_grupo = $26,
+                grupo = $27,
+                numerodomes = $28,
+                updated_at = NOW()
+              WHERE id = $29
+              RETURNING id
+            `;
+            
+            const updateParams = [
+              memberData.idExterno || memberData.id_externo || null,
+              memberData.nome || '',
+              memberData.sobrenome || '',
+              nomeCompleto,
+              dataNascimento,
+              memberData.idade || null,
+              memberData.mes || null,
+              memberData.telefone || null,
+              memberData.sexo || null,
+              memberData.observacoes || null,
+              memberData.statusCivil || memberData.status_civil || null,
+              memberData.conjuge || null,
+              memberData.parentesco || null,
+              memberData.rua || null,
+              memberData.numero || null,
+              memberData.bairro || null,
+              memberData.cidade || null,
+              memberData.estado || null,
+              memberData.cep || null,
+              memberData.batizado || false,
+              memberData.membro || false,
+              memberData.situacaoAtual || memberData.situacao_atual || null,
+              memberData.lider || false,
+              memberData.eProfessorEbq || memberData.e_professor_ebq || false,
+              memberData.faixaEtaria || memberData.faixa_etaria || null,
+              memberData.pequenoGrupo || memberData.pequeno_grupo || false,
+              memberData.grupo || null,
+              memberData.numeroDomes || memberData.numerodomes || null,
+              existingId  // WHERE id = $29
+            ];
+            
+            const result = await db.execute(updateSql, updateParams);
+            resultId = existingId;
+            
+          } else {
+            // ➕ MEMBRO NÃO EXISTE - FAZER INSERT
+            action = 'inserted';
+            
+            // 🆔 GERAR ID USANDO A FUNÇÃO DO POSTGRESQL
+            const idResult = await db.query('SELECT gerar_id_compacto($1) as id', [nomeCompleto]);
+            const generatedId = idResult[0].id;
+            
+            // ✅ INSERIR COM O ID GERADO
+            const insertSql = `
+              INSERT INTO membros (
+                id, id_externo, nome, sobrenome, nome_completo, data_nascimento, idade, mes,
+                telefone, sexo, observacoes, status_civil, conjuge, parentesco,
+                rua, numero, bairro, cidade, estado, cep,
+                batizado, membro, situacao_atual, lider, e_professor_ebq,
+                faixa_etaria, pequeno_grupo, grupo, numerodomes,
+                created_at, updated_at
+              ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+                $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, NOW(), NOW()
+              ) RETURNING id
+            `;
+            
+            const insertParams = [
+              generatedId, // 🆔 ID GERADO
+              memberData.idExterno || memberData.id_externo || null,
+              memberData.nome || '',
+              memberData.sobrenome || '',
+              nomeCompleto,
+              dataNascimento,
+              memberData.idade || null,
+              memberData.mes || null,
+              memberData.telefone || null,
+              memberData.sexo || null,
+              memberData.observacoes || null,
+              memberData.statusCivil || memberData.status_civil || null,
+              memberData.conjuge || null,
+              memberData.parentesco || null,
+              memberData.rua || null,
+              memberData.numero || null,
+              memberData.bairro || null,
+              memberData.cidade || null,
+              memberData.estado || null,
+              memberData.cep || null,
+              memberData.batizado || false,
+              memberData.membro || false,
+              memberData.situacaoAtual || memberData.situacao_atual || null,
+              memberData.lider || false,
+              memberData.eProfessorEbq || memberData.e_professor_ebq || false,
+              memberData.faixaEtaria || memberData.faixa_etaria || null,
+              memberData.pequenoGrupo || memberData.pequeno_grupo || false,
+              memberData.grupo || null,
+              memberData.numeroDomes || memberData.numerodomes || null
+            ];
+            
+            const result = await db.execute(insertSql, insertParams);
+            resultId = result.rows[0]?.id;
           }
+          
+          // ✅ RESULTADO (INSERT ou UPDATE)
+          results.push({ 
+            success: true, 
+            id: resultId,
+            action: action,
+            member: { nome: nomeCompleto }
+          });
+          
+          console.log(`✅ [${i + 1}/${membersArray.length}] Membro ${action === 'updated' ? 'atualizado' : 'inserido'}: ${nomeCompleto} (ID: ${resultId})`);
+          
+          // Delay de 50ms entre cada operação
+          if (i < membersArray.length - 1) {
+            await sleep(50);
+          }
+        } catch (error) {
+          const nomeCompleto = memberData.nomeCompleto || memberData.nome_completo || `${memberData.nome || ''} ${memberData.sobrenome || ''}`.trim();
+          console.error(`❌ Erro ao importar membro ${nomeCompleto}:`, error.message);
+          results.push({ 
+            success: false, 
+            error: error.message,
+            data: { nome: nomeCompleto }
+          });
         }
       }
       

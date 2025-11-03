@@ -4,43 +4,16 @@ import { MemberFilters as MemberFiltersComponent } from '@/components/dashboard/
 import { MemberList } from '@/components/dashboard/MemberList';
 import { ImportExport } from '@/components/dashboard/ImportExport';
 import { useToast } from '@/hooks/use-toast';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Member, MemberFromDB, MemberFilters } from '@/types/member';
+import { Member, MemberFilters } from '@/types/member';
 import { filterMembers, calculateAge, getMemberType } from '@/utils/memberUtils';
-import { mockMembers } from '@/data/mockMembers';
 import { useAppContext } from '@/contexts/useAppContext';
 
-const API_URL = 'http://localhost:5001/api/members';
-
 const Index = () => {
-  const [members, setMembers] = useLocalStorage<Member[]>('church-members', []);
-  const { filters, onFiltersChange } = useAppContext(); // ✅ Usar filtros do contexto
+  const { members, filters, onFiltersChange, onRefresh, onImport, onReplaceAll, onMemberUpdate } = useAppContext();
   const [sortField, setSortField] = useState<keyof Member | 'idade' | 'tipo' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
   const memberListRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Backend não disponível');
-        const data: MemberFromDB[] = await response.json();
-        const formattedData: Member[] = data.map((item) => ({
-          ...item,
-          id: item._id,
-        }));
-        setMembers(formattedData);
-      } catch (error) {
-        console.error('Backend não disponível, usando dados locais/mock:', error);
-        // Se não há dados no localStorage, usa dados mock
-        if (members.length === 0) {
-          setMembers(mockMembers);
-        }
-      }
-    };
-    fetchMembers();
-  }, [setMembers, members.length]);
 
   const activeMembers = useMemo(() => {
     return members.filter(m => m.status !== 'desligado');
@@ -72,7 +45,7 @@ const Index = () => {
     return [...filteredMembers].sort((a, b) => {
       // ✅ ORDENAÇÃO ESPECIAL POR DATA DE NASCIMENTO
       if (sortField === 'dataNascimento') {
-        // Regra: Primeiro pelo DIA (menor para maior), depois pelo MÊS (se dia igual), ignora ANO
+        // Regra: Primeiro pelo MÊS (menor para maior), depois pelo DIA (se mês igual), ignora ANO
         const dateA = new Date(a.dataNascimento || '1900-01-01');
         const dateB = new Date(b.dataNascimento || '1900-01-01');
         
@@ -81,12 +54,12 @@ const Index = () => {
         const monthA = dateA.getUTCMonth(); // 0-11
         const monthB = dateB.getUTCMonth();
         
-        // Compara pelo dia primeiro
-        if (dayA !== dayB) {
-          return sortDirection === 'asc' ? dayA - dayB : dayB - dayA;
+        // Compara pelo mês primeiro
+        if (monthA !== monthB) {
+          return sortDirection === 'asc' ? monthA - monthB : monthB - monthA;
         }
-        // Se o dia for igual, compara pelo mês
-        return sortDirection === 'asc' ? monthA - monthB : monthB - monthA;
+        // Se o mês for igual, compara pelo dia
+        return sortDirection === 'asc' ? dayA - dayB : dayB - dayA;
       }
       
       // Ordenação para outros campos
@@ -124,21 +97,6 @@ const Index = () => {
     }
   };
 
-  const handleRefresh = async () => {
-    try {
-      const response = await fetch(API_URL);
-      const data: MemberFromDB[] = await response.json();
-      const formattedData: Member[] = data.map((item) => ({
-        ...item,
-        id: item._id || '',
-      }));
-      setMembers(formattedData);
-      toast({ title: 'Dados atualizados com sucesso!' });
-    } catch (error) {
-      console.error('Erro ao atualizar:', error);
-    }
-  };
-
   const handleFiltersChange = (newFilters: MemberFilters) => {
     onFiltersChange(newFilters);
   };
@@ -155,110 +113,6 @@ const Index = () => {
     memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleImport = (importedMembers: Partial<Member>[]) => {
-    const newMembers: Member[] = importedMembers.map((member, index) => ({
-      id: member.id || `imported-${Date.now()}-${index}`,
-      nome: member.nome || '',
-      nomeCompleto: member.nomeCompleto,
-      avatar_url: member.avatar_url,
-      dataNascimento: member.dataNascimento || '',
-      idade: member.idade || 0,
-      mes: member.mes || '',
-      sexo: member.sexo || 'M',
-      telefone: member.telefone || '',
-      email: member.email,
-      endereco: member.endereco || '',
-      rua: member.rua || '',
-      numero: member.numero || '',
-      bairro: member.bairro || '',
-      cidade: member.cidade || '',
-      estado: member.estado || '',
-      cep: member.cep || '',
-      status: member.status || 'ativo',
-      statusCivil: member.statusCivil,
-      conjuge: member.conjuge,
-      parentesco: member.parentesco,
-      batizado: member.batizado || false,
-      membro: member.membro || false,
-      lider: member.lider || false,
-      professorEBQ: member.professorEBQ || false,
-      faixaEtaria: member.faixaEtaria || '',
-      pequeno_grupo: member.pequeno_grupo || false,
-      grupo: member.grupo,
-      numero_domes: member.numero_domes,
-      dataBatismo: member.dataBatismo,
-      dataMembresia: member.dataMembresia,
-      dataDesligamento: member.dataDesligamento,
-      observacoes: member.observacoes,
-      createdAt: member.createdAt || new Date().toISOString(),
-      updatedAt: member.updatedAt || new Date().toISOString()
-    }));
-    setMembers(prevMembers => [...prevMembers, ...newMembers]);
-    toast({ title: "Membros adicionados com sucesso!" });
-  };
-
-  const handleReplaceAll = (importedMembers: Partial<Member>[]) => {
-    console.log('🔄 Substituindo todos os membros. Total importado:', importedMembers.length);
-    
-    const newMembers: Member[] = importedMembers.map((member, index) => {
-      const fullMember: Member = {
-        id: member.id || `imported-${Date.now()}-${index}`,
-        nome: member.nome || '',
-        nomeCompleto: member.nomeCompleto,
-        avatar_url: member.avatar_url,
-        dataNascimento: member.dataNascimento || '',
-        idade: member.idade || 0,
-        mes: member.mes || '',
-        sexo: member.sexo || 'M',
-        telefone: member.telefone || '',
-        email: member.email,
-        endereco: member.endereco || '',
-        rua: member.rua || '',
-        numero: member.numero || '',
-        bairro: member.bairro || '',
-        cidade: member.cidade || '',
-        estado: member.estado || '',
-        cep: member.cep || '',
-        status: member.status || 'ativo',
-        statusCivil: member.statusCivil,
-        conjuge: member.conjuge,
-        parentesco: member.parentesco,
-        batizado: member.batizado || false,
-        membro: member.membro || false,
-        lider: member.lider || false,
-        professorEBQ: member.professorEBQ || false,
-        faixaEtaria: member.faixaEtaria || '',
-        pequeno_grupo: member.pequeno_grupo || false,
-        grupo: member.grupo,
-        numero_domes: member.numero_domes,
-        dataBatismo: member.dataBatismo,
-        dataMembresia: member.dataMembresia,
-        dataDesligamento: member.dataDesligamento,
-        observacoes: member.observacoes,
-        createdAt: member.createdAt || new Date().toISOString(),
-        updatedAt: member.updatedAt || new Date().toISOString()
-      };
-      return fullMember;
-    });
-    
-    console.log('✅ Membros processados:', newMembers.length);
-    console.log('📊 Primeiros 3 membros processados:', newMembers.slice(0, 3));
-    
-    setMembers(newMembers);
-    toast({ 
-      title: "Base de dados substituída com sucesso!", 
-      description: `${newMembers.length} membros carregados`
-    });
-  };
-
-  const handleMemberUpdate = (updatedMember: Member) => {
-    setMembers(prevMembers => 
-      prevMembers.map(member => 
-        member.id === updatedMember.id ? updatedMember : member
-      )
-    );
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
@@ -272,8 +126,8 @@ const Index = () => {
           members={members} 
           filteredMembers={filteredMembers}
           filters={filters}
-          onImport={handleImport} 
-          onReplaceAll={handleReplaceAll} 
+          onImport={onImport} 
+          onReplaceAll={onReplaceAll} 
         />
         <MemberFiltersComponent 
           members={members} 
@@ -283,11 +137,12 @@ const Index = () => {
         <div ref={memberListRef} data-member-list>
           <MemberList 
             members={sortedAndFilteredMembers} 
-            onMemberUpdate={handleMemberUpdate}
-            onRefresh={handleRefresh}
+            onMemberUpdate={onMemberUpdate}
+            onRefresh={onRefresh}
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
+            filters={filters}
           />
         </div>
       </div>

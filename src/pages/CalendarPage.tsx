@@ -25,16 +25,24 @@ export default function CalendarPage() {
       .filter(m => m.status === 'ativo' && m.dataNascimento)
       .flatMap(member => {
         const [, month, day] = member.dataNascimento.split('-');
+        // Define cor baseada no sexo: azul para masculino, rosa para feminino
+        const color = member.sexo === 'M' ? '#3b82f6' : '#ec4899';
+        
         return [-1, 0, 1].map(offset => ({
           id: `birthday-${member.id}-${year + offset}`,
           groupId: `birthday-${member.id}`,
-          title: `Aniv. ${member.nome.split(' ')[0]}`,
+          title: `Aniv. ${member.nomeCompleto || member.nome}`,
           start: `${year + offset}-${month}-${day}`,
           allDay: true,
           display: 'block',
-          backgroundColor: '#ec4899',
-          borderColor: '#ec4899',
-          extendedProps: { type: 'birthday', originalTitle: `Aniversário de ${member.nome}` }
+          backgroundColor: color,
+          borderColor: color,
+          extendedProps: { 
+            type: 'birthday', 
+            originalTitle: `Aniversário de ${member.nomeCompleto || member.nome}`,
+            memberId: member.id,
+            memberSexo: member.sexo
+          }
         }));
       });
 

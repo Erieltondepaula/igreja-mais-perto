@@ -1,6 +1,8 @@
 export interface Member {
   id: string;
+  idExterno?: string; // ID do sistema antigo
   nome: string;
+  sobrenome?: string; // Sobrenome separado
   nomeCompleto?: string;
   avatar_url?: string; // Caminho da foto/avatar do membro
   dataNascimento: string;

@@ -6,7 +6,7 @@ import { z } from 'zod';
 export const memberSchema = z.object({
   nome: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   nomeCompleto: z.string().optional(),
-  photoUrl: z.string().url({ message: "URL da foto inválida." }).optional().or(z.literal('')),
+  avatar_url: z.string().url({ message: "URL da foto inválida." }).optional().or(z.literal('')),
   dataNascimento: z.string().refine((date) => new Date(date).toString() !== 'Invalid Date' && date, {
     message: "Data de nascimento é obrigatória.",
   }),

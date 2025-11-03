@@ -291,6 +291,180 @@ class ImportacaoInterativaService {
       };
     }
   }
+
+  // IMPORTAÇÃO COMPLETA - Limpa banco e importa tudo do Excel
+  async importarCompleto(caminhoArquivo) {
+    const client = new Client(this.dbConfig);
+    const crypto = require('crypto');
+    
+    try {
+      await client.connect();
+      
+      console.log('📊 Iniciando importação completa...');
+      
+      // 1. Ler arquivo Excel
+      const workbook = XLSX.readFile(caminhoArquivo);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const linhas = XLSX.utils.sheet_to_json(worksheet);
+      
+      console.log(`📄 Total de linhas no Excel: ${linhas.length}`);
+      
+      // 2. Limpar banco de dados
+      console.log('🗑️ Limpando banco de dados...');
+      const deleteResult = await client.query('DELETE FROM membros');
+      console.log(`✅ ${deleteResult.rowCount} registros removidos`);
+      
+      // 3. Resetar sequências se necessário
+      await client.query("SELECT setval('membros_id_seq', 1, false)");
+      
+      // Estatísticas
+      const stats = {
+        criados: 0,
+        erros: 0,
+        pulados: 0,
+        detalhes: []
+      };
+      
+      // 4. Processar cada linha
+      for (let i = 0; i < linhas.length; i++) {
+        const row = linhas[i];
+        const numLinha = i + 2;
+        
+        try {
+          // Extrair dados
+          const idExterno = row['Id'] ? String(row['Id']).trim() : null;
+          const nome = row['nome'] || '';
+          const nomeCompleto = row['Nome Completo'] || nome;
+          
+          if (!nome || !idExterno) {
+            stats.pulados++;
+            continue;
+          }
+          
+          // Converter data do Excel
+          let dataNascimento = null;
+          if (row['data_nascimento']) {
+            const excelDate = parseInt(row['data_nascimento']);
+            const jsDate = new Date((excelDate - 25569) * 86400 * 1000);
+            dataNascimento = jsDate.toISOString().split('T')[0];
+          }
+          
+          // Gerar ID único
+          const iniciais = nomeCompleto
+            .split(' ')
+            .filter(p => p.length > 0)
+            .map(p => p[0].toUpperCase())
+            .join('')
+            .slice(0, 2);
+          
+          const timestamp = new Date()
+            .toISOString()
+            .replace(/[-:T]/g, '')
+            .replace(/\..+/, '')
+            .slice(0, 14);
+          
+          const sufixo = crypto.randomBytes(2).toString('hex').toUpperCase().slice(0, 4);
+          const id = `${iniciais}${timestamp}-${sufixo}`;
+          
+          // Separar nome e sobrenome
+          const partesNome = nome.trim().split(' ');
+          const primeiroNome = partesNome[0];
+          const sobrenome = partesNome.slice(1).join(' ') || primeiroNome;
+          
+          // Extrair outros campos
+          const idade = row['idade'];
+          const mes = row['mes'];
+          const telefone = row['telefone'] ? String(row['telefone']) : '';
+          const sexo = row['sexo'];
+          const rua = row['rua'] || null;
+          const numero = row['numero'] || null;
+          const bairro = row['bairro'] || null;
+          const cidade = row['cidade'] || null;
+          const estado = row['estado'] || null;
+          const cep = row['cep'] ? String(row['cep']) : null;
+          const statusCivil = row['status_civil'] || null;
+          const conjuge = row['nome_conjuge '] || null;
+          const parentesco = row['parentesco '] || null;
+          const batizado = row['batizado'] === 'Sim';
+          const membro = row['membro'] === 'Sim';
+          const situacaoAtual = row['situacao_atual'] || 'Ativo';
+          const eLider = row['e_lider'] === 'Sim';
+          const eProfessorEbq = (row['e_professor_ebq\n'] || row['e_professor_ebq']) === 'Sim';
+          const faixaEtaria = row['faixa_etaria '] || null;
+          const pequenoGrupo = row['Está em um pequeno grupo ?'] === 'Sim';
+          const grupo = row['grupo'] || null;
+          const numerodomes = row['numerodomes'] || null;
+          
+          // Inserir no banco
+          await client.query(`
+            INSERT INTO membros (
+              id, id_externo, nome, sobrenome, nome_completo,
+              data_nascimento, idade, mes, telefone, sexo,
+              status_civil, conjuge, parentesco,
+              rua, numero, bairro, cidade, estado, cep,
+              situacao_atual, batizado, membro, lider, e_professor_ebq,
+              faixa_etaria, pequeno_grupo, grupo, numerodomes,
+              created_at, updated_at
+            ) VALUES (
+              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+              $11, $12, $13, $14, $15, $16, $17, $18, $19,
+              $20, $21, $22, $23, $24, $25, $26, $27, $28,
+              NOW(), NOW()
+            )
+          `, [
+            id, idExterno, primeiroNome, sobrenome, nomeCompleto,
+            dataNascimento, idade, mes, telefone, sexo,
+            statusCivil, conjuge, parentesco,
+            rua, numero, bairro, cidade, estado, cep,
+            situacaoAtual, batizado, membro, eLider, eProfessorEbq,
+            faixaEtaria, pequenoGrupo, grupo, numerodomes
+          ]);
+          
+          stats.criados++;
+          
+        } catch (error) {
+          stats.erros++;
+          stats.detalhes.push({
+            linha: numLinha,
+            erro: error.message
+          });
+          console.error(`❌ Erro na linha ${numLinha}:`, error.message);
+        }
+      }
+      
+      // 5. Verificar total final
+      const totalResult = await client.query('SELECT COUNT(*) as total FROM membros');
+      const totalFinal = parseInt(totalResult.rows[0].total);
+      
+      console.log(`\n✅ Importação concluída!`);
+      console.log(`   Criados: ${stats.criados}`);
+      console.log(`   Pulados: ${stats.pulados}`);
+      console.log(`   Erros: ${stats.erros}`);
+      console.log(`   Total no banco: ${totalFinal}`);
+      
+      return {
+        sucesso: true,
+        estatisticas: {
+          totalLinhas: linhas.length,
+          criados: stats.criados,
+          pulados: stats.pulados,
+          erros: stats.erros,
+          totalFinal: totalFinal
+        },
+        detalhes: stats.detalhes
+      };
+      
+    } catch (error) {
+      console.error('❌ Erro na importação completa:', error);
+      return {
+        sucesso: false,
+        erro: error.message
+      };
+    } finally {
+      await client.end();
+    }
+  }
 }
 
 module.exports = ImportacaoInterativaService;

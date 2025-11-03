@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Member, MemberFilters } from '@/types/member';
 import { importFromExcel, exportToExcel } from '@/utils/excelUtils';
-import { exportToPDF } from '@/utils/pdfUtils';
-import { Upload, Download, Database, FileText } from 'lucide-react';
+import { Upload, Download, Database } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 interface ImportExportProps {
@@ -65,15 +64,6 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
     }
   };
 
-  const handleExportPDF = () => {
-    const membersToExport = filteredMembers ?? members;
-    const logoUrlRaw = localStorage.getItem('church-logo');
-    const churchNameRaw = localStorage.getItem('church-name');
-    const logoUrl = logoUrlRaw ? JSON.parse(logoUrlRaw) : null;
-    const churchName = churchNameRaw ? JSON.parse(churchNameRaw) : 'Relatório de Membros';
-    exportToPDF(membersToExport, filters, logoUrl, churchName, 'relatorio-membros');
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -83,7 +73,7 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* ✅ AGORA SÓ TEMOS UM BOTÃO DE IMPORTAR QUE SUBSTITUI */}
             <Button size="lg" onClick={() => fileInputRef.current?.click()} disabled={loading} className="md:col-span-1">
               <Upload className="h-4 w-4 mr-2" />
@@ -92,10 +82,6 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
             <Button size="lg" onClick={() => exportToExcel(filteredMembers ?? members, 'membros-exportados')} variant="outline" className="md:col-span-1">
               <Download className="h-4 w-4 mr-2" />
               Exportar para Excel (XLSX)
-            </Button>
-            <Button size="lg" onClick={handleExportPDF} variant="outline" className="md:col-span-1">
-              <FileText className="h-4 w-4 mr-2" />
-              Exportar para PDF
             </Button>
         </div>
         <Input

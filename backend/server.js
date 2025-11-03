@@ -29,17 +29,27 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+// ⚠️ Capturar erros não tratados
+process.on('uncaughtException', (error) => {
+  console.error('💥 ERRO NÃO CAPTURADO:', error);
+  console.error('Stack:', error.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 PROMISE REJEITADA NÃO TRATADA:', reason);
+  console.error('Promise:', promise);
+});
+
 // 🐘 POSTGRESQL: Sistema moderno e robusto
 const db = require('./config/postgresql');
 const MemberService = require('./services/MemberServicePostgreSQL');
+const avatarCleanupService = require('./services/avatarCleanupService');
 
 const app = express();
-app.use('/api', avatarRouter);
-app.use('/api', importarXLSRouter);
 
-// Configuração do CORS para permitir a comunicação com o front-end
+// Configuração do CORS para permitir a comunicação com o front-end (DEVE VIR ANTES DAS ROTAS)
 const corsOptions = {
-  origin: ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'],
+  origin: ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
   optionsSuccessStatus: 200,
   credentials: true
 };
@@ -47,23 +57,31 @@ app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '10mb' })); 
 
+// Servir arquivos estáticos (avatares)
+const avatarsPath = path.join(__dirname, '..', 'public', 'avatars');
+app.use('/avatars', express.static(avatarsPath));
+console.log('📁 Servindo avatares de:', avatarsPath);
+
+// Rotas
+app.use('/api', avatarRouter);
+app.use('/api', importarXLSRouter);
+
 // 🐘 INICIALIZAÇÃO POSTGRESQL
 async function initializeSystem() {
   logger.info('🔄 Inicializando sistema com PostgreSQL...');
-  logger.info('🔄 Inicializando sistema com PostgreSQL...');
   try {
+    logger.info('📡 Conectando ao banco...');
     await db.connect();
     logger.info('✅ Conectado ao PostgreSQL com sucesso!');
-  logger.info('✅ Conectado ao PostgreSQL com sucesso!');
     // Verificar se o schema existe
+    logger.info('🏥 Executando health check...');
     const healthCheck = await db.healthCheck();
-    logger.info(`🏥 Status do banco: ${healthCheck.status}`);
-  logger.info(`🏥 Status do banco: ${healthCheck.status}`);
+    logger.info(`✅ Health check completo: ${healthCheck.status}`);
+    logger.info('✨ Inicialização concluída!');
+    return true; // ✅ Retorna sucesso
   } catch (err) {
     logger.error(`❌ Falha ao conectar com PostgreSQL: ${err}`);
-  logger.error(`❌ Falha ao conectar com PostgreSQL: ${err}`);
     logger.info('💡 Execute: node scripts/setupPostgreSQL.js');
-  logger.info('💡 Execute: node scripts/setupPostgreSQL.js');
     process.exit(1);
   }
 }
@@ -78,8 +96,7 @@ app.get('/api/members', async (req, res) => {
     res.json(members);
   } catch (error) {
     logger.error(`❌ Erro ao buscar membros: ${error}`);
-  logger.error(`❌ Erro ao buscar membros: ${error}`);
-  logger.info('🔎 Tentativa de buscar todos os membros falhou.');
+    logger.info('🔎 Tentativa de buscar todos os membros falhou.');
     res.status(500).json({ message: 'Erro ao buscar membros do PostgreSQL.' });
   }
 });
@@ -95,9 +112,7 @@ app.get('/api/members/:id', async (req, res) => {
     res.json(member);
   } catch (error) {
     logger.error(`❌ Erro ao buscar membro ${req.params.id}: ${error}`);
-  logger.error(`❌ Erro ao buscar membro ${req.params.id}: ${error}`);
-  logger.info(`🔎 Tentativa de buscar membro por ID (${req.params.id}) falhou.`);
-  logger.info(`🗑️ ${result.rowCount} membros removidos da tabela`);
+    logger.info(`🔎 Tentativa de buscar membro por ID (${req.params.id}) falhou.`);
     res.status(500).json({ message: 'Erro ao buscar membro.' });
   }
 });
@@ -156,9 +171,11 @@ app.post('/api/members/batch', async (req, res) => {
   try {
     // Se replaceAll for true, limpar tabela primeiro
     if (replaceAll) {
-      logger.info("🗑️ [LOG] Limpando tabela de membros...");
+      logger.info("🗑️ [LOG] Modo REPLACE ALL - Limpando tabela de membros...");
       await MemberService.clearAllMembers();
       logger.info("✅ [LOG] Tabela limpa com sucesso!");
+    } else {
+      logger.info("🔄 [LOG] Modo UPDATE - Membros existentes serão atualizados");
     }
 
     // 🎯 SISTEMA ANTI-DUPLICAÇÃO: Verificar duplicatas por Nome + Data Nascimento
@@ -171,6 +188,13 @@ app.post('/api/members/batch', async (req, res) => {
       
       if (!duplicateChecks.includes(uniqueKey)) {
         duplicateChecks.push(uniqueKey);
+        
+        // 🔍 DEBUG: Log do membro original
+        if (processedMembers.length === 0) {
+          logger.info(`🔍 [DEBUG] Primeiro membro - situacao_atual original: "${member.situacao_atual}"`);
+          logger.info(`🔍 [DEBUG] Chaves do membro:`, Object.keys(member).filter(k => k.includes('situacao')));
+        }
+        
         processedMembers.push({
           ...member,
           // Garantir que não há ID do Excel (será gerado pelo PostgreSQL)
@@ -179,6 +203,7 @@ app.post('/api/members/batch', async (req, res) => {
           nome_completo: member.nomeCompleto || member.nome_completo,
           data_nascimento: member.dataNascimento || member.data_nascimento,
           status_civil: member.statusCivil || member.status_civil,
+          situacao_atual: member.situacao_atual || member.situacaoAtual,  // ← ORDEM CORRETA!
           professor_ebq: member.professorEBQ || member.professor_ebq,
           pequeno_grupo: member.pequeno_grupo || false,
           data_batismo: member.dataBatismo || member.data_batismo,
@@ -197,16 +222,18 @@ app.post('/api/members/batch', async (req, res) => {
     const successCount = results.filter(r => r.success).length;
     const errorCount = results.filter(r => !r.success).length;
     const duplicateCount = members.length - processedMembers.length;
+    const insertedCount = results.filter(r => r.success && r.action === 'inserted').length;
+    const updatedCount = results.filter(r => r.success && r.action === 'updated').length;
     
   logger.info(`✅ [LOG] Importação concluída:`);
-  logger.info(`   - ${successCount} sucessos com IDs personalizados`);
+  logger.info(`   - ${successCount} sucessos (${insertedCount} novos, ${updatedCount} atualizados)`);
   logger.info(`   - ${errorCount} erros`);
   logger.info(`   - ${duplicateCount} duplicatas evitadas`);
     
     // Mostrar alguns IDs gerados como exemplo
     const successResults = results.filter(r => r.success && r.id);
     if (successResults.length > 0) {
-      logger.info(`🆔 [EXEMPLOS] IDs gerados: ${successResults.slice(0, 3).map(r => r.id).join(', ')}`);
+      logger.info(`🆔 [EXEMPLOS] IDs: ${successResults.slice(0, 3).map(r => r.id).join(', ')}`);
     }
     
     res.json({
@@ -266,14 +293,39 @@ const PORT = process.env.PORT || 5001;
 
 // 🐘 INICIALIZAR POSTGRESQL E SUBIR SERVIDOR
 initializeSystem().then(() => {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info(`🚀 Servidor rodando na porta ${PORT}`);
-    logger.info(`� Banco PostgreSQL: dashboard_membros`);
+    logger.info(`🗄️ Banco PostgreSQL: dashboard_membros`);
     logger.info(`🌐 API disponível em: http://localhost:${PORT}`);
     logger.info(`🆔 IDs personalizados: formato AA20253010104302`);
     logger.info(`🧪 Teste ID: http://localhost:${PORT}/api/test-id/ABNER/LIMA`);
+    logger.info(`✅ Servidor ATIVO - aguardando requisições...`);
+    
+    // 🧹 Iniciar limpeza automática de avatars (a cada 24 horas)
+    avatarCleanupService.startAutoCleanup(24);
+    logger.info(`🤖 Limpeza automática de avatars ativada (a cada 24h)`);
   });
+
+  // Prevenir que o processo termine inesperadamente
+  server.on('error', (error) => {
+    logger.error(`❌ Erro no servidor: ${error.message}`);
+    logger.error(`❌ Stack: ${error.stack}`);
+  });
+
+  // Handler para encerramento gracioso
+  process.on('SIGINT', () => {
+    logger.info('\n🛑 Encerrando servidor...');
+    avatarCleanupService.stopAutoCleanup(); // Parar limpeza automática
+    server.close(() => {
+      logger.info('✅ Servidor fechado com sucesso');
+      process.exit(0);
+    });
+  });
+
 }).catch(error => {
-  logger.error(`❌ Falha crítica na inicialização: ${error}`);
+  logger.error(`❌ Falha crítica na inicialização:`);
+  logger.error(`❌ Mensagem: ${error.message}`);
+  logger.error(`❌ Stack: ${error.stack}`);
+  console.error('❌ ERRO COMPLETO:', error);
   process.exit(1);
 });

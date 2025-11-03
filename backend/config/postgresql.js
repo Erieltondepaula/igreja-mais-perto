@@ -15,7 +15,9 @@ class PostgreSQLDatabase {
       // Configurações de performance
       max: 20, // Máximo de conexões no pool
       idleTimeoutMillis: 30000, // Timeout para conexões ociosas
-      connectionTimeoutMillis: 2000, // Timeout para conexão
+      connectionTimeoutMillis: 5000, // ✅ Aumentado para 5 segundos
+      query_timeout: 10000, // ✅ Timeout de 10 segundos para queries
+      statement_timeout: 10000, // ✅ Timeout de 10 segundos para statements
     });
 
     // Event handlers para debugging
@@ -126,12 +128,15 @@ class PostgreSQLDatabase {
   // ===================================
   async healthCheck() {
     try {
-      const result = await this.query('SELECT version(), current_database(), current_user');
+      // Simplificado: apenas verifica se consegue conectar e executar uma query leve
+      const client = await this.pool.connect();
+      const res = await client.query('SELECT 1 as healthy');
+      client.release();
+      if (!res || !res.rows) {
+        return { status: 'unhealthy', timestamp: new Date().toISOString() };
+      }
       return {
         status: 'healthy',
-        version: result[0].version,
-        database: result[0].current_database,
-        user: result[0].current_user,
         timestamp: new Date().toISOString()
       };
     } catch (error) {

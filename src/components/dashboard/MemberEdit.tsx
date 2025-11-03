@@ -26,6 +26,59 @@ interface MemberEditProps {
 // O tipo de dados do formulário é inferido a partir do schema
 type MemberFormData = z.infer<typeof memberSchema>;
 
+// Função para formatar telefone
+const formatPhone = (phone: string | undefined): string => {
+  if (!phone) return '';
+  
+  const numbers = phone.replace(/\D/g, '');
+  
+  if (numbers.length === 11) {
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 3)} ${numbers.slice(3, 7)}-${numbers.slice(7)}`;
+  } else if (numbers.length === 10) {
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+  }
+  
+  return phone;
+};
+
+// Função para formatar CEP
+const formatCEP = (cep: string | undefined): string => {
+  if (!cep) return '';
+  
+  const numbers = cep.replace(/\D/g, '');
+  
+  if (numbers.length === 8) {
+    return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}-${numbers.slice(5)}`;
+  }
+  
+  return cep;
+};
+
+// Função para converter data ISO para formato yyyy-MM-dd do input
+const formatDateForInput = (dateString: string | undefined): string => {
+  if (!dateString) return '';
+  
+  try {
+    // Se já está no formato yyyy-MM-dd, retorna
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString;
+    }
+    
+    // Se é ISO (2022-01-02T03:00:00.000Z), converte
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  } catch (e) {
+    console.error('Erro ao formatar data:', e);
+  }
+  
+  return '';
+};
+
 export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps) => {
   const { toast } = useToast();
 
@@ -38,24 +91,78 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
   // Atualiza os valores do formulário se o membro selecionado mudar
   useEffect(() => {
     if (member) {
-      form.reset(member);
+      // Formatar telefone, CEP e data antes de carregar no formulário
+      const memberWithFormattedData = {
+        ...member,
+        telefone: formatPhone(member.telefone),
+        cep: formatCEP(member.cep),
+        dataNascimento: formatDateForInput(member.dataNascimento)
+      };
+      form.reset(memberWithFormattedData);
     }
   }, [member, form]);
 
   if (!member) return null;
 
-  const handleSave = (data: MemberFormData) => {
-    const updatedMember = {
-      ...member,
-      ...data,
-      updatedAt: new Date().toISOString(),
-    };
-    onSave(updatedMember);
-    toast({
-      title: "Membro atualizado",
-      description: "Os dados do membro foram atualizados com sucesso."
-    });
-    onClose();
+  const handleSave = async (data: MemberFormData) => {
+    try {
+      // Remover formatação do telefone e CEP antes de salvar
+      const phoneNumbers = data.telefone?.replace(/\D/g, '') || '';
+      const cepNumbers = data.cep?.replace(/\D/g, '') || '';
+      
+      // Converter avatar_url de URL completa para caminho relativo
+      let avatarUrl = data.avatar_url;
+      if (avatarUrl?.includes('http://localhost:5001')) {
+        avatarUrl = avatarUrl.replace('http://localhost:5001', '');
+      }
+      
+      const updatedMember = {
+        ...member,
+        ...data,
+        telefone: phoneNumbers,
+        cep: cepNumbers,
+        avatar_url: avatarUrl,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      // Salvar no banco de dados via API
+      const response = await fetch(`http://localhost:5001/api/members/${member.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nome_completo: updatedMember.nomeCompleto,
+          data_nascimento: updatedMember.dataNascimento,
+          telefone: updatedMember.telefone,
+          rua: updatedMember.endereco, // Frontend usa "endereco", backend usa "rua"
+          bairro: updatedMember.bairro,
+          cidade: updatedMember.cidade,
+          cep: updatedMember.cep,
+          status_civil: updatedMember.statusCivil,
+          observacoes: updatedMember.observacoes,
+          avatar_url: updatedMember.avatar_url,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar membro');
+      }
+
+      onSave(updatedMember);
+      toast({
+        title: "Membro atualizado",
+        description: "Os dados do membro foram atualizados com sucesso."
+      });
+      onClose();
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar o membro. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
   
   const status = form.watch('status');
@@ -74,7 +181,7 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
             {/* Campo para foto/avatar com upload */}
             <FormField
               control={form.control}
-              name="photoUrl"
+              name="avatar_url"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Foto/Avatar</FormLabel>
@@ -101,19 +208,45 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
+                          
+                          console.log('📸 Arquivo selecionado:', file.name);
+                          
                           const formData = new FormData();
                           formData.append('avatar', file);
+                          formData.append('memberId', member.id.toString());
+                          
                           try {
-                            const res = await fetch('/api/upload-avatar', {
+                            console.log('🔄 Enviando avatar para o servidor...');
+                            const res = await fetch('http://localhost:5001/api/upload-avatar', {
                               method: 'POST',
                               body: formData,
                             });
+                            
+                            if (!res.ok) {
+                              const errorData = await res.json().catch(() => ({}));
+                              throw new Error(errorData.message || `Erro HTTP: ${res.status}`);
+                            }
+                            
                             const data = await res.json();
+                            console.log('✅ Avatar enviado:', data);
+                            
                             if (data.avatar_url) {
-                              field.onChange(data.avatar_url);
+                              const fullUrl = `http://localhost:5001${data.avatar_url}`;
+                              field.onChange(fullUrl);
+                              console.log('✅ Avatar URL atualizado no formulário:', fullUrl);
+                              
+                              toast({
+                                title: "Avatar atualizado!",
+                                description: "A foto foi salva com sucesso.",
+                              });
                             }
                           } catch (err) {
-                            // TODO: feedback de erro
+                            console.error('❌ Erro ao fazer upload do avatar:', err);
+                            toast({
+                              title: "Erro ao fazer upload",
+                              description: err instanceof Error ? err.message : "Erro desconhecido. Verifique o console.",
+                              variant: "destructive"
+                            });
                           }
                         }}
                       />
@@ -178,12 +311,68 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
               )}
             />
 
-            <FormField control={form.control} name="telefone" render={({ field }) => (<FormItem><FormLabel>Telefone</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField 
+              control={form.control} 
+              name="telefone" 
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      value={field.value ?? ''} 
+                      placeholder="(27) 9 9999-9999"
+                      onChange={(e) => {
+                        // Aplicar máscara de telefone (27) 9 9999-9999
+                        let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é número
+                        
+                        if (value.length > 11) value = value.slice(0, 11); // Limita a 11 dígitos
+                        
+                        if (value.length > 6) {
+                          value = `(${value.slice(0, 2)}) ${value.slice(2, 3)} ${value.slice(3, 7)}-${value.slice(7)}`;
+                        } else if (value.length > 2) {
+                          value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                        } else if (value.length > 0) {
+                          value = `(${value}`;
+                        }
+                        
+                        field.onChange(value);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} 
+            />
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="endereco" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="bairro" render={({ field }) => (<FormItem><FormLabel>Bairro</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="cidade" render={({ field }) => (<FormItem><FormLabel>Cidade</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="cep" render={({ field }) => (
+              <FormItem>
+                <FormLabel>CEP</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    value={field.value ?? ''} 
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      let formatted = value;
+                      
+                      if (value.length >= 5) {
+                        formatted = `${value.slice(0, 2)}.${value.slice(2, 5)}`;
+                        if (value.length > 5) {
+                          formatted += `-${value.slice(5, 8)}`;
+                        }
+                      }
+                      
+                      field.onChange(formatted);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
 
              <FormField
               control={form.control}
