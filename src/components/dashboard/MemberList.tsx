@@ -172,18 +172,29 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
               {paginatedMembers.map(member => (
                 <TableRow key={member.id}>
                   {/* ✅ COLUNA DA FOTO */}
-                  <TableCell className="w-12">
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt={member.nome}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
-                        <span className="text-xs">?</span>
+                  <TableCell className="w-16">
+                    <div className="flex items-center justify-center">
+                      {member.avatar_url ? (
+                        <img
+                          src={member.avatar_url}
+                          alt={member.nome}
+                          className="w-12 h-12 aspect-square rounded-full object-cover object-center shadow-sm border border-gray-200"
+                          style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px', maxWidth: '48px', maxHeight: '48px' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        className={`w-12 h-12 aspect-square rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white shadow-sm ${member.avatar_url ? 'hidden' : ''}`}
+                        style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px', maxWidth: '48px', maxHeight: '48px' }}
+                      >
+                        <span className="text-lg font-bold">
+                          {member.nome?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
                       </div>
-                    )}
+                    </div>
                   </TableCell>
                   {/* ✅ COLUNA DO NOME */}
                   <TableCell className="font-medium">

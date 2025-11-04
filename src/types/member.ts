@@ -19,6 +19,7 @@ export interface Member {
   estado: string;
   cep: string;
   status: 'ativo' | 'desligado';
+  situacao_atual?: string; // Campo adicional para compatibilidade com backend
   statusCivil?: string;
   conjuge?: string;
   parentesco?: string;

@@ -54,10 +54,10 @@ export const MemberDetails = ({ member, onMemberUpdate }: MemberDetailsProps) =>
                 <img
                   src={member.avatar_url}
                   alt={member.nome}
-                  className="w-20 h-20 rounded-full object-cover border-2 border-primary"
+                  className="w-20 h-20 aspect-square rounded-full object-cover object-center border-2 border-primary"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-muted border-2 border-border flex items-center justify-center">
+                <div className="w-20 h-20 aspect-square rounded-full bg-muted border-2 border-border flex items-center justify-center">
                   <User className="h-10 w-10 text-muted-foreground" />
                 </div>
               )}

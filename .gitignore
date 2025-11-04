@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Backups do banco de dados
+backend/database/Backup_banco/*.json
+backend/database-backups/*.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

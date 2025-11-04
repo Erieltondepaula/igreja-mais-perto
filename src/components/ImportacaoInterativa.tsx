@@ -183,11 +183,23 @@ const ImportacaoInterativa = () => {
         const nomeCompleto = (membro.nomeCompleto || membro.nome || '').trim().toUpperCase();
         const dataNasc = membro.dataNascimento;
         
-        // Procurar membro existente por nome + data nascimento
-        const membroExistente = membrosExistentes.find(m => 
-          m.nomeCompleto.trim().toUpperCase() === nomeCompleto &&
-          m.dataNascimento === dataNasc
-        );
+        // 🔍 Procurar membro existente por nome + data nascimento
+        const membroExistente = membrosExistentes.find(m => {
+          const nomeMatch = m.nomeCompleto.trim().toUpperCase() === nomeCompleto;
+          
+          // Comparar datas (pode vir em formatos diferentes)
+          let dataMatch = false;
+          if (dataNasc && m.dataNascimento) {
+            // Normalizar datas para comparação (apenas ano-mês-dia)
+            const dataNascNorm = dataNasc.split('T')[0]; // Remove hora se tiver
+            const dataExistenteNorm = m.dataNascimento.split('T')[0];
+            dataMatch = dataNascNorm === dataExistenteNorm;
+          }
+          
+          return nomeMatch && dataMatch;
+        });
+
+        console.log(`📋 Linha ${index + 2}: ${nomeCompleto} - ${membroExistente ? 'EXISTE' : 'NOVO'}`);
 
         if (!membroExistente) {
           // NOVO MEMBRO
@@ -578,30 +590,64 @@ const ImportacaoInterativa = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
-                {dadosAnalise.estatisticas.novosUsuarios || dadosAnalise.estatisticas.novos}
+          {/* Estatísticas - VISUAL MELHORADO */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Card: Novos Cadastros */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 p-6 rounded-xl shadow-md">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="bg-blue-500 text-white rounded-full p-2">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-semibold text-blue-900">Novos Cadastros</h3>
+                </div>
+                <div className="text-4xl font-bold text-blue-600">
+                  {dadosAnalise.estatisticas.novosUsuarios || dadosAnalise.estatisticas.novos}
+                </div>
               </div>
-              <div className="text-sm text-gray-600">Novos usuários</div>
+              <p className="text-sm text-blue-700">
+                Membros que serão <strong>criados</strong> no sistema
+              </p>
             </div>
-            <div className="bg-yellow-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">
-                {dadosAnalise.estatisticas.atualizacoes}
+
+            {/* Card: Atualizações */}
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 p-6 rounded-xl shadow-md">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="bg-orange-500 text-white rounded-full p-2">
+                    <RefreshCw className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-semibold text-orange-900">Atualizações</h3>
+                </div>
+                <div className="text-4xl font-bold text-orange-600">
+                  {dadosAnalise.estatisticas.atualizacoes}
+                </div>
               </div>
-              <div className="text-sm text-gray-600">Requer confirmação</div>
+              <p className="text-sm text-orange-700">
+                Membros existentes com <strong>alterações</strong> detectadas
+              </p>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
-                {dadosAnalise.estatisticas.semAlteracao || 0}
+          </div>
+
+          {/* Informações adicionais */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-green-700">Sem Alteração</span>
+                <span className="text-2xl font-bold text-green-600">
+                  {dadosAnalise.estatisticas.semAlteracao || 0}
+                </span>
               </div>
-              <div className="text-sm text-gray-600">Sem alteração</div>
+              <p className="text-xs text-green-600 mt-1">Registros idênticos ao banco</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-gray-600">
-                {dadosAnalise.estatisticas.totalLinhas}
+            <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Total de Linhas</span>
+                <span className="text-2xl font-bold text-gray-600">
+                  {dadosAnalise.estatisticas.totalLinhas}
+                </span>
               </div>
-              <div className="text-sm text-gray-600">Total</div>
+              <p className="text-xs text-gray-600 mt-1">No arquivo Excel</p>
             </div>
           </div>
 
@@ -647,36 +693,62 @@ const ImportacaoInterativa = () => {
             <TableBody>
               {dadosAnalise.dados.map((item) => {
                 const resultado = resultados.find(r => r.linha === item.linha);
+                const isNovo = item.acao === 'criar_novo';
+                const isAtualizacao = item.acao === 'confirmar_atualizacao';
                 
                 return (
-                  <TableRow key={item.linha}>
-                    <TableCell>{item.linha}</TableCell>
+                  <TableRow 
+                    key={item.linha}
+                    className={
+                      isNovo ? 'bg-blue-50/50 hover:bg-blue-100/50' :
+                      isAtualizacao ? 'bg-orange-50/50 hover:bg-orange-100/50' :
+                      'hover:bg-gray-50'
+                    }
+                  >
+                    <TableCell className="font-medium">{item.linha}</TableCell>
                     <TableCell>{item.idExterno || '-'}</TableCell>
-                    <TableCell>{item.nomeCompleto || item.nome}</TableCell>
+                    <TableCell className="font-medium">{item.nomeCompleto || item.nome}</TableCell>
                     <TableCell>
-                      <Badge variant={
-                        item.acao === 'criar_novo' ? 'default' :
-                        item.acao === 'confirmar_atualizacao' ? 'destructive' :
-                        'secondary'
-                      }>
-                        {item.acao === 'criar_novo' ? 'Criar' :
-                         item.acao === 'confirmar_atualizacao' ? 'Atualizar' :
+                      <Badge 
+                        variant={isNovo ? 'default' : isAtualizacao ? 'destructive' : 'secondary'}
+                        className={
+                          isNovo ? 'bg-blue-500 hover:bg-blue-600' :
+                          isAtualizacao ? 'bg-orange-500 hover:bg-orange-600' :
+                          ''
+                        }
+                      >
+                        {isNovo && (
+                          <Users className="h-3 w-3 mr-1" />
+                        )}
+                        {isAtualizacao && (
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                        )}
+                        {isNovo ? 'NOVO CADASTRO' :
+                         isAtualizacao ? 'ATUALIZAÇÃO' :
                          'Sem alteração'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {item.diferencas && item.diferencas.length > 0 ? (
                         <div className="space-y-1">
+                          <div className="text-xs font-semibold text-orange-700 mb-1">
+                            {item.diferencas.length} campo(s) diferente(s):
+                          </div>
                           {item.diferencas.map((diff, idx) => (
-                            <div key={idx} className="text-xs">
-                              <span className="font-medium text-blue-600">{diff.label}:</span>{' '}
-                              <span className="line-through text-gray-400">{diff.valorAtual}</span>{' '}
-                              → <span className="text-green-600 font-medium">{diff.valorNovo}</span>
+                            <div key={idx} className="text-xs bg-white p-2 rounded border border-orange-200">
+                              <span className="font-medium text-orange-600">{diff.label}:</span>{' '}
+                              <div className="mt-1">
+                                <span className="line-through text-gray-500">{diff.valorAtual}</span>
+                                <span className="text-orange-600 mx-2">→</span>
+                                <span className="text-green-600 font-semibold">{diff.valorNovo}</span>
+                              </div>
                             </div>
                           ))}
                         </div>
+                      ) : isNovo ? (
+                        <span className="text-blue-600 text-sm font-medium">Novo membro</span>
                       ) : (
-                        <span className="text-gray-400 text-sm">-</span>
+                        <span className="text-gray-400 text-sm">Sem mudanças</span>
                       )}
                     </TableCell>
                     <TableCell>

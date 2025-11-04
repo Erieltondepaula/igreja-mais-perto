@@ -89,11 +89,34 @@ async function initializeSystem() {
 
 // --- ROTAS DA API ---
 
+// Função auxiliar para converter campos do banco (snake_case) para frontend (camelCase)
+function convertMemberToFrontend(member) {
+  if (!member) return null;
+  
+  return {
+    ...member,
+    idExterno: member.id_externo,
+    nomeCompleto: member.nome_completo,
+    dataNascimento: member.data_nascimento,
+    statusCivil: member.status_civil,
+    situacaoAtual: member.situacao_atual,
+    professorEBQ: member.e_professor_ebq,
+    faixaEtaria: member.faixa_etaria,
+    pequenoGrupo: member.pequeno_grupo,
+    numeroDomes: member.numerodomes,
+    avatarUrl: member.avatar_url,
+    createdAt: member.created_at,
+    updatedAt: member.updated_at
+  };
+}
+
 // 🐘 ROTA: Buscar TODOS os membros do PostgreSQL
 app.get('/api/members', async (req, res) => {
   try {
     const members = await MemberService.getAllMembers();
-    res.json(members);
+    // Converter todos os membros para o formato frontend
+    const convertedMembers = members.map(convertMemberToFrontend);
+    res.json(convertedMembers);
   } catch (error) {
     logger.error(`❌ Erro ao buscar membros: ${error}`);
     logger.info('🔎 Tentativa de buscar todos os membros falhou.');
@@ -109,7 +132,8 @@ app.get('/api/members/:id', async (req, res) => {
     if (!member) {
         return res.status(404).json({ message: 'Membro não encontrado.' });
     }
-    res.json(member);
+    // Converter membro para o formato frontend
+    res.json(convertMemberToFrontend(member));
   } catch (error) {
     logger.error(`❌ Erro ao buscar membro ${req.params.id}: ${error}`);
     logger.info(`🔎 Tentativa de buscar membro por ID (${req.params.id}) falhou.`);
@@ -136,7 +160,8 @@ app.put('/api/members/:id', async (req, res) => {
     if (!updatedMember) {
         return res.status(404).json({ message: 'Membro não encontrado.' });
     }
-    res.json(updatedMember);
+    // Converter membro para o formato frontend
+    res.json(convertMemberToFrontend(updatedMember));
   } catch (error) {
     logger.error(`❌ Erro ao atualizar membro ${req.params.id}: ${error}`);
     res.status(500).json({ message: 'Erro ao atualizar membro.' });
@@ -169,13 +194,17 @@ app.post('/api/members/batch', async (req, res) => {
   logger.info(`🎯 [LOG] IDs personalizados serão gerados automaticamente (formato: AA20253010104302)`);
 
   try {
-    // Se replaceAll for true, limpar tabela primeiro
+    // 🧠 SISTEMA INTELIGENTE - Não precisa mais limpar tabela!
+    // O importMembers() agora é inteligente e identifica automaticamente:
+    // - Membros existentes (atualiza apenas campos diferentes)
+    // - Membros novos (insere com ID único)
+    // - PRESERVA avatar_url sempre
+    
     if (replaceAll) {
-      logger.info("🗑️ [LOG] Modo REPLACE ALL - Limpando tabela de membros...");
-      await MemberService.clearAllMembers();
-      logger.info("✅ [LOG] Tabela limpa com sucesso!");
+      logger.info("🧠 [LOG] Modo REPLACE ALL - Sistema inteligente ativado");
+      logger.info("📋 [LOG] Preservando avatars e atualizando apenas campos diferentes");
     } else {
-      logger.info("🔄 [LOG] Modo UPDATE - Membros existentes serão atualizados");
+      logger.info("🔄 [LOG] Modo UPDATE - Sistema inteligente ativado");
     }
 
     // 🎯 SISTEMA ANTI-DUPLICAÇÃO: Verificar duplicatas por Nome + Data Nascimento
@@ -236,6 +265,15 @@ app.post('/api/members/batch', async (req, res) => {
       logger.info(`🆔 [EXEMPLOS] IDs: ${successResults.slice(0, 3).map(r => r.id).join(', ')}`);
     }
     
+    // 🧹 Executar limpeza automática de avatars não utilizados
+    logger.info(`🧹 [LOG] Executando limpeza automática de avatars...`);
+    try {
+      const cleanupResult = await MemberService.cleanupUnusedAvatars();
+      logger.info(`✅ [LOG] Limpeza concluída: ${cleanupResult.removidos} removidos, ${cleanupResult.mantidos} mantidos`);
+    } catch (cleanupError) {
+      logger.error(`⚠️ [LOG] Erro na limpeza de avatars: ${cleanupError.message}`);
+    }
+
     res.json({
       message: `Importação concluída: ${successCount} membros com IDs personalizados, ${errorCount} erros, ${duplicateCount} duplicatas evitadas.`,
       results,

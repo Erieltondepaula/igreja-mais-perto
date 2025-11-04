@@ -212,15 +212,15 @@ export const exportToPDF = (
     startY: infoYPosition + 10,
     styles: { 
       fontSize: 9, 
-      cellPadding: { top: 3, right: 2, bottom: 3, left: 2 }, // Aumentado padding vertical de 2 para 3
-      minCellHeight: 12 // Altura mínima da célula para garantir espaço para foto (8px) + margens
+      cellPadding: { top: 4, right: 2, bottom: 4, left: 2 }, // Aumentado padding vertical
+      minCellHeight: 16 // Altura mínima aumentada para 16px para acomodar foto de 12px
     },
     headStyles: { fillColor: [22, 115, 222], textColor: 255, fontStyle: 'bold' },
     margin: { left: margin, right: margin },
     columnStyles: showPhoto ? {
-      0: { cellPadding: { top: 3, right: 2, bottom: 3, left: 15 } } // Espaço para avatar com padding vertical
+      0: { cellPadding: { top: 4, right: 2, bottom: 4, left: 18 } } // Espaço para avatar (12px + 6px margem)
     } : {},
-    // ✅ ADICIONAR FOTOS NA COLUNA NOME (sem duplicar texto)
+    // ✅ ADICIONAR FOTOS NA COLUNA NOME (com melhor qualidade)
     didDrawCell: showPhoto ? (data) => {
       if (data.section === 'body' && data.column.index === 0) {
         const member = members[data.row.index];
@@ -230,12 +230,14 @@ export const exportToPDF = (
               ? member.avatar_url 
               : `http://localhost:5001${member.avatar_url}`;
             
-            const imgSize = 8;
-            const imgX = data.cell.x + 3; // Aumentado de 2 para 3px (mais espaço da borda)
-            const imgY = data.cell.y + (data.cell.height - imgSize) / 2;
+            // ✅ MELHORIAS: Tamanho maior e centralizado
+            const imgSize = 12; // 12px de diâmetro
+            const imgX = data.cell.x + 3; // 3px da borda esquerda
+            const imgY = data.cell.y + (data.cell.height - imgSize) / 2; // Centralizado verticalmente
             
-            // Adiciona apenas a imagem - autoTable já renderiza o texto com o padding ajustado
-            doc.addImage(avatarUrl, 'PNG', imgX, imgY, imgSize, imgSize);
+            // ✅ Adiciona imagem redonda sem círculo no meio
+            doc.addImage(avatarUrl, 'JPEG', imgX, imgY, imgSize, imgSize, undefined, 'FAST');
+            
           } catch (e) {
             console.error('Erro ao adicionar avatar no PDF:', e);
           }

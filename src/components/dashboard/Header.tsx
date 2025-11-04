@@ -83,9 +83,9 @@ export const Header = ({ members, onCardClick }: HeaderProps) => {
         <div className="flex items-center gap-4">
           <div className="relative group flex-shrink-0">
             {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
+              <img src={logoUrl} alt="Logo" className="w-16 h-16 aspect-square rounded-full object-cover object-center border-2 border-primary" />
             ) : (
-              <div className="w-16 h-16 rounded-full bg-muted border-2 border-border flex items-center justify-center">
+              <div className="w-16 h-16 aspect-square rounded-full bg-muted border-2 border-border flex items-center justify-center">
                 <Church className="h-8 w-8 text-muted-foreground" />
               </div>
             )}

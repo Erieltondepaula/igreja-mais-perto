@@ -70,7 +70,7 @@ try {
 Write-Host "`n📊 RESUMO:" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-$checkDB = $membro.avatar_url -ne $null -and $membro.avatar_url -ne ""
+$checkDB = $null -ne $membro.avatar_url -and $membro.avatar_url -ne ""
 $checkFile = $encontrado
 $checkHTTP = $response.StatusCode -eq 200
 

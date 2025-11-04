@@ -51,9 +51,8 @@ router.post('/upload-avatar', upload.single('avatar'), async (req, res) => {
     const ext = path.extname(filename).toLowerCase();
     const avatarsDir = path.join(__dirname, '../../public/avatars');
 
-    // Se recebemos memberId, buscar avatar antigo primeiro
-    let oldAvatarUrl = null;
-    let targetFilename = null;
+    // Se recebemos memberId, buscar avatar antigo primeiro e SEMPRE usar memberId como nome
+    let oldAvatarPath = null;
     
     if (memberId) {
       try {
@@ -64,43 +63,41 @@ router.post('/upload-avatar', upload.single('avatar'), async (req, res) => {
         );
         
         if (memberResult.length > 0 && memberResult[0].avatar_url) {
-          oldAvatarUrl = memberResult[0].avatar_url;
-          // Extrair o nome do arquivo antigo para manter a referência
+          const oldAvatarUrl = memberResult[0].avatar_url;
+          // Extrair o caminho do arquivo antigo
           const oldFilename = oldAvatarUrl.replace('/avatars/', '');
-          const oldExt = path.extname(oldFilename).toLowerCase();
-          const oldBasename = path.basename(oldFilename, oldExt);
+          oldAvatarPath = path.join(avatarsDir, oldFilename);
           
-          // Manter o mesmo nome base do avatar antigo, apenas trocar a extensão se necessário
-          targetFilename = ext === oldExt ? oldFilename : `${oldBasename}${ext}`;
+          console.log(`🔄 Substituindo avatar antigo: ${oldFilename}`);
           
-          console.log(`🔄 Substituindo avatar: ${oldFilename} → ${targetFilename}`);
+          // REMOVER o arquivo antigo se existir
+          if (fs.existsSync(oldAvatarPath)) {
+            fs.unlinkSync(oldAvatarPath);
+            console.log(`�️  Avatar antigo removido: ${oldFilename}`);
+          }
         } else {
-          // Novo avatar, usar o ID do membro como nome
-          targetFilename = `${memberId}${ext}`;
-          console.log(`➕ Novo avatar para membro ${memberId}: ${targetFilename}`);
+          console.log(`➕ Novo avatar para membro ${memberId}`);
         }
-      } catch (dbError) {
-        console.error('❌ Erro ao buscar avatar antigo:', dbError);
-        targetFilename = `${memberId}${ext}`;
-      }
-      
-      const currentPath = path.join(avatarsDir, filename);
-      const targetPath = path.join(avatarsDir, targetFilename);
+        
+        // SEMPRE usar o memberId como nome do arquivo para manter consistência
+        const targetFilename = `${memberId}${ext}`;
+        const currentPath = path.join(avatarsDir, filename);
+        const targetPath = path.join(avatarsDir, targetFilename);
 
-      // Se o nome atual é diferente do desejado, mover/renomear
-      if (filename !== targetFilename) {
-        try {
-          // Remover arquivo antigo se existir (substituição)
+        // Se o arquivo atual tem nome diferente do desejado, renomear
+        if (filename !== targetFilename) {
+          // Remover arquivo destino se existir (caso edge)
           if (fs.existsSync(targetPath)) {
             fs.unlinkSync(targetPath);
-            console.log(`🗑️  Avatar antigo removido: ${targetFilename}`);
           }
           fs.renameSync(currentPath, targetPath);
           filename = targetFilename;
-          console.log(`✅ Avatar renomeado: ${filename}`);
-        } catch (renameErr) {
-          console.error('❌ Erro ao renomear arquivo de avatar:', renameErr);
+          console.log(`✅ Avatar salvo como: ${filename}`);
         }
+        
+      } catch (dbError) {
+        console.error('❌ Erro ao processar substituição de avatar:', dbError);
+        // Continuar com o nome padrão
       }
     }
 

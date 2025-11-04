@@ -1,6 +1,6 @@
 // Local do arquivo: components/dashboard/MemberEdit.tsx
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Member } from '@/types/member';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { AvatarCropDialog } from '@/components/ui/AvatarCropDialog';
 
 interface MemberEditProps {
   member: Member | null;
@@ -79,8 +80,12 @@ const formatDateForInput = (dateString: string | undefined): string => {
   return '';
 };
 
-export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps) => {
+export function MemberEdit({ member, isOpen, onClose, onSave }: MemberEditProps) {
   const { toast } = useToast();
+  
+  // Estados para o crop de avatar
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   const form = useForm<MemberFormData>({
     resolver: zodResolver(memberSchema),
@@ -164,6 +169,50 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
       });
     }
   };
+
+  // Função chamada quando o usuário termina de fazer o crop da imagem
+  const handleCropComplete = async (croppedImageBlob: Blob) => {
+    try {
+      console.log('📸 Imagem cortada recebida:', croppedImageBlob.size, 'bytes');
+      
+      // Cria um FormData para enviar a imagem cortada
+      const formData = new FormData();
+      formData.append('avatar', croppedImageBlob, 'avatar.jpg');
+      formData.append('memberId', member!.id.toString());
+      
+      console.log('🔄 Enviando avatar para o servidor...');
+      const res = await fetch('http://localhost:5001/api/upload-avatar', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `Erro HTTP: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log('✅ Avatar enviado:', data);
+      
+      if (data.avatar_url) {
+        const fullUrl = `http://localhost:5001${data.avatar_url}`;
+        form.setValue('avatar_url', fullUrl);
+        console.log('✅ Avatar URL atualizado no formulário:', fullUrl);
+        
+        toast({
+          title: "Avatar atualizado!",
+          description: "A foto foi salva com sucesso.",
+        });
+      }
+    } catch (err) {
+      console.error('❌ Erro ao fazer upload do avatar:', err);
+      toast({
+        title: "Erro ao fazer upload",
+        description: err instanceof Error ? err.message : "Erro desconhecido. Verifique o console.",
+        variant: "destructive"
+      });
+    }
+  };
   
   const status = form.watch('status');
   const isMembro = form.watch('membro');
@@ -192,10 +241,10 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
                           <img
                             src={field.value}
                             alt="Avatar"
-                            className="w-16 h-16 rounded-full object-cover border"
+                            className="w-16 h-16 aspect-square rounded-full object-cover object-center border"
                           />
                         ) : (
-                          <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 border">
+                          <div className="w-16 h-16 aspect-square rounded-full bg-gray-200 flex items-center justify-center text-gray-400 border">
                             <span className="text-xs">Selecionar</span>
                           </div>
                         )}
@@ -205,49 +254,18 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
                         type="file"
                         accept="image/*"
                         style={{ display: 'none' }}
-                        onChange={async (e) => {
+                        onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           
                           console.log('📸 Arquivo selecionado:', file.name);
                           
-                          const formData = new FormData();
-                          formData.append('avatar', file);
-                          formData.append('memberId', member.id.toString());
+                          // Abre o dialog de crop em vez de fazer upload direto
+                          setSelectedImageFile(file);
+                          setIsCropDialogOpen(true);
                           
-                          try {
-                            console.log('🔄 Enviando avatar para o servidor...');
-                            const res = await fetch('http://localhost:5001/api/upload-avatar', {
-                              method: 'POST',
-                              body: formData,
-                            });
-                            
-                            if (!res.ok) {
-                              const errorData = await res.json().catch(() => ({}));
-                              throw new Error(errorData.message || `Erro HTTP: ${res.status}`);
-                            }
-                            
-                            const data = await res.json();
-                            console.log('✅ Avatar enviado:', data);
-                            
-                            if (data.avatar_url) {
-                              const fullUrl = `http://localhost:5001${data.avatar_url}`;
-                              field.onChange(fullUrl);
-                              console.log('✅ Avatar URL atualizado no formulário:', fullUrl);
-                              
-                              toast({
-                                title: "Avatar atualizado!",
-                                description: "A foto foi salva com sucesso.",
-                              });
-                            }
-                          } catch (err) {
-                            console.error('❌ Erro ao fazer upload do avatar:', err);
-                            toast({
-                              title: "Erro ao fazer upload",
-                              description: err instanceof Error ? err.message : "Erro desconhecido. Verifique o console.",
-                              variant: "destructive"
-                            });
-                          }
+                          // Limpa o input para permitir selecionar a mesma imagem novamente
+                          e.target.value = '';
                         }}
                       />
                     </div>
@@ -450,6 +468,14 @@ export const MemberEdit = ({ member, isOpen, onClose, onSave }: MemberEditProps)
           </form>
         </Form>
       </DialogContent>
+      
+      {/* Dialog de crop de avatar */}
+      <AvatarCropDialog
+        isOpen={isCropDialogOpen}
+        onClose={() => setIsCropDialogOpen(false)}
+        imageFile={selectedImageFile}
+        onCropComplete={handleCropComplete}
+      />
     </Dialog>
   );
 };
