@@ -66,7 +66,7 @@ export const AppCalendar = () => {
   const birthdays = useMemo((): CalendarEvent[] => {
     return members
       .filter(member => 
-        (member.situacaoAtual === 'ativo' || member.status === 'ativo') && 
+        (member.situacao_atual === 'ativo' || member.status === 'ativo') && 
         member.dataNascimento
       )
       .map((member) => {

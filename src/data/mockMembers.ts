@@ -51,20 +51,32 @@ const generateMockMembers = (): Member[] => {
     const diaNasc = 1 + Math.floor(Math.random() * 28);
     const dataNascimento = `${anoNasc}-${mesNasc.toString().padStart(2, '0')}-${diaNasc.toString().padStart(2, '0')}`;
 
+    const idade = new Date().getFullYear() - anoNasc;
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    
     const member: Member = {
       id: (i + 1).toString(),
       nome: nomes[i % nomes.length] + (i > nomes.length ? ` ${Math.floor(i / nomes.length) + 1}` : ''),
       dataNascimento,
+      idade,
+      mes: meses[mesNasc - 1],
       sexo: isMasculino ? 'M' : 'F',
       telefone: telefones[i % telefones.length],
       email: `membro${i + 1}@email.com`,
       endereco: `Rua ${i + 1}, ${100 + i}`,
+      rua: `Rua ${i + 1}`,
+      numero: `${100 + i}`,
       bairro: bairros[i % bairros.length],
       cidade: 'São Paulo',
+      estado: 'SP',
       cep: `${(1000 + i).toString().padStart(5, '0')}-${Math.floor(Math.random() * 999).toString().padStart(3, '0')}`,
       status: isAtivo ? 'ativo' : 'desligado',
       batizado: isBatizado,
       membro: isMembro,
+      lider: Math.random() > 0.9,
+      professorEBQ: Math.random() > 0.85,
+      faixaEtaria: idade < 12 ? 'Criança' : idade < 18 ? 'Adolescente' : idade < 30 ? 'Jovem' : idade < 60 ? 'Adulto' : 'Idoso',
+      pequeno_grupo: Math.random() > 0.5,
       dataBatismo: isBatizado ? `${anoNasc + 18 + Math.floor(Math.random() * 10)}-${mesNasc.toString().padStart(2, '0')}-${diaNasc.toString().padStart(2, '0')}` : undefined,
       dataMembresia: isMembro ? `${anoNasc + 19 + Math.floor(Math.random() * 10)}-${mesNasc.toString().padStart(2, '0')}-${diaNasc.toString().padStart(2, '0')}` : undefined,
       dataDesligamento: !isAtivo ? '2023-08-15' : undefined,
