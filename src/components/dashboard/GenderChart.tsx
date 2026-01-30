@@ -22,9 +22,9 @@ interface GenderData {
 export const GenderChart = ({ members, onSegmentClick }: GenderChartProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // ✅ CORRIGIDO: Filtro correto para membros ativos (situacaoAtual pode ser "Ativo" ou "ativo")
+  // ✅ CORRIGIDO: Filtro correto para membros ativos (situacao_atual pode ser "Ativo" ou "ativo")
   const activeMembers = members.filter(m => {
-    const situacao = m.situacaoAtual?.toLowerCase() || m.status?.toLowerCase();
+    const situacao = m.situacao_atual?.toLowerCase() || m.status?.toLowerCase();
     return situacao === 'ativo';
   });
   const data: GenderData[] = getGenderChartData(activeMembers);

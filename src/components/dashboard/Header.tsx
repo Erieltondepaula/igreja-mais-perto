@@ -45,7 +45,7 @@ export const Header = ({ members, onCardClick }: HeaderProps) => {
 
   // ✅ CORRIGIDO: Filtro correto para membros ativos (case-insensitive)
   const activeMembers = members.filter(m => {
-    const situacao = m.situacaoAtual?.toLowerCase() || m.status?.toLowerCase();
+    const situacao = m.situacao_atual?.toLowerCase() || m.status?.toLowerCase();
     return situacao === 'ativo';
   });
 
