@@ -8,16 +8,8 @@ import { Member, MemberFilters } from '@/types/member';
 
 const API_BASE_URL = 'http://localhost:5001/api';
 
-export interface AppContextType {
-  members: Member[];
-  filters: MemberFilters;
-  isLoading: boolean;
-  onFiltersChange: (filters: MemberFilters) => void;
-  onImport: (members: Partial<Member>[]) => Promise<boolean>;
-  onReplaceAll: (members: Partial<Member>[]) => Promise<boolean>;
-  onMemberUpdate: (member: Member) => Promise<void>;
-  onRefresh: () => void;
-}
+// Interface movida para AppContext.tsx - este arquivo está obsoleto
+// Mantido apenas para compatibilidade
 
 // AppContext agora está em AppContext.tsx
 
@@ -141,7 +133,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const onReplaceAll = async (importedMembers: Partial<Member>[]): Promise<boolean> => {
-    return onImport(importedMembers); // Mesma lógica da importação
+    return onImport(importedMembers);
+  };
+
+  const onMemberAdd = async (member: Partial<Member>): Promise<Member | null> => {
+    // Não implementado neste contexto legado
+    return null;
+  };
+
+  const onMemberDelete = async (id: string): Promise<boolean> => {
+    // Não implementado neste contexto legado
+    return false;
   };
 
   const value = {
@@ -152,6 +154,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     onImport,
     onReplaceAll,
     onMemberUpdate,
+    onMemberAdd,
+    onMemberDelete,
     onRefresh
   };
 
