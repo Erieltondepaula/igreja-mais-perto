@@ -14,13 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      membros: {
+        Row: {
+          avatar_url: string | null
+          bairro: string | null
+          batizado: boolean | null
+          cep: string | null
+          cidade: string | null
+          conjuge: string | null
+          created_at: string | null
+          data_batismo: string | null
+          data_desligamento: string | null
+          data_membresia: string | null
+          data_nascimento: string | null
+          e_professor_ebq: boolean | null
+          email: string | null
+          estado: string | null
+          faixa_etaria: string | null
+          grupo: string | null
+          id: string
+          id_externo: string | null
+          idade: number | null
+          lider: boolean | null
+          membro: boolean | null
+          mes: string | null
+          nome: string
+          nome_completo: string | null
+          numero: string | null
+          numero_domes: number | null
+          observacoes: string | null
+          parentesco: string | null
+          pequeno_grupo: boolean | null
+          rua: string | null
+          sexo: string | null
+          situacao_atual: string | null
+          sobrenome: string
+          status_civil: string | null
+          telefone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bairro?: string | null
+          batizado?: boolean | null
+          cep?: string | null
+          cidade?: string | null
+          conjuge?: string | null
+          created_at?: string | null
+          data_batismo?: string | null
+          data_desligamento?: string | null
+          data_membresia?: string | null
+          data_nascimento?: string | null
+          e_professor_ebq?: boolean | null
+          email?: string | null
+          estado?: string | null
+          faixa_etaria?: string | null
+          grupo?: string | null
+          id: string
+          id_externo?: string | null
+          idade?: number | null
+          lider?: boolean | null
+          membro?: boolean | null
+          mes?: string | null
+          nome: string
+          nome_completo?: string | null
+          numero?: string | null
+          numero_domes?: number | null
+          observacoes?: string | null
+          parentesco?: string | null
+          pequeno_grupo?: boolean | null
+          rua?: string | null
+          sexo?: string | null
+          situacao_atual?: string | null
+          sobrenome: string
+          status_civil?: string | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bairro?: string | null
+          batizado?: boolean | null
+          cep?: string | null
+          cidade?: string | null
+          conjuge?: string | null
+          created_at?: string | null
+          data_batismo?: string | null
+          data_desligamento?: string | null
+          data_membresia?: string | null
+          data_nascimento?: string | null
+          e_professor_ebq?: boolean | null
+          email?: string | null
+          estado?: string | null
+          faixa_etaria?: string | null
+          grupo?: string | null
+          id?: string
+          id_externo?: string | null
+          idade?: number | null
+          lider?: boolean | null
+          membro?: boolean | null
+          mes?: string | null
+          nome?: string
+          nome_completo?: string | null
+          numero?: string | null
+          numero_domes?: number | null
+          observacoes?: string | null
+          parentesco?: string | null
+          pequeno_grupo?: boolean | null
+          rua?: string | null
+          sexo?: string | null
+          situacao_atual?: string | null
+          sobrenome?: string
+          status_civil?: string | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_member_id: {
+        Args: { p_nome: string; p_sobrenome: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
