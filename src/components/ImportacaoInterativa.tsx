@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,8 @@ interface DadosItem {
   idExterno?: string;
   telefone?: string;
   dataNascimento?: string;
+  status?: string; // NOVO, EXISTE, etc
+  membroCompleto?: Partial<Member>; // Objeto Member completo do Excel
   requerConfirmacao: boolean;
   diferencas?: {
     label: string;
@@ -83,6 +86,10 @@ const ImportacaoInterativa = () => {
   const [estatisticasFinais, setEstatisticasFinais] = useState<EstatisticasFinais | null>(null);
   const [importandoCompleto, setImportandoCompleto] = useState(false);
   const [arquivoAtual, setArquivoAtual] = useState<File | null>(null);
+  // Novo: IDs das linhas marcadas para atualização
+  const [linhasParaAtualizar, setLinhasParaAtualizar] = useState<number[]>([]);
+  // Checkbox de seleção em lote
+  const [selecionarTodos, setSelecionarTodos] = useState(false);
 
   // NOVA FUNÇÃO: Importação Completa (Substitui Tudo)
   const importarCompleto = async (arquivo: File) => {
@@ -209,8 +216,11 @@ const ImportacaoInterativa = () => {
             acao: 'criar_novo',
             nome: membro.nome || '',
             nomeCompleto: membro.nomeCompleto,
+            idExterno: membro.idExterno,
             telefone: membro.telefone,
             dataNascimento: membro.dataNascimento,
+            status: 'NOVO',
+            membroCompleto: membro,
             requerConfirmacao: false
           });
         } else {
@@ -251,8 +261,10 @@ const ImportacaoInterativa = () => {
               acao: 'confirmar_atualizacao',
               nome: membro.nome || '',
               nomeCompleto: membro.nomeCompleto,
+              idExterno: membro.idExterno,
               telefone: membro.telefone,
               dataNascimento: membro.dataNascimento,
+              status: 'EXISTE',
               requerConfirmacao: true,
               diferencas
             });
@@ -264,8 +276,10 @@ const ImportacaoInterativa = () => {
               acao: 'sem_alteracao',
               nome: membro.nome || '',
               nomeCompleto: membro.nomeCompleto,
+              idExterno: membro.idExterno,
               telefone: membro.telefone,
               dataNascimento: membro.dataNascimento,
+              status: 'EXISTE',
               requerConfirmacao: false
             });
           }
@@ -312,9 +326,35 @@ const ImportacaoInterativa = () => {
         onConfirm: () => executarAcao(item, acao),
         onCancel: () => setModalConfirmacao(null)
       });
+      setLinhasParaAtualizar((prev) => prev.includes(item.linha) ? prev : [...prev, item.linha]);
     } else {
       await executarAcao(item, acao);
+      if (acao === 'atualizar') {
+        setLinhasParaAtualizar((prev) => prev.includes(item.linha) ? prev : [...prev, item.linha]);
+      }
+      if (acao === 'ignorar') {
+        setLinhasParaAtualizar((prev) => prev.filter(l => l !== item.linha));
+      }
     }
+  };
+
+  // Seleção em lote: marcar/desmarcar todos
+  const handleSelecionarTodos = () => {
+    if (!dadosAnalise) return;
+    if (!selecionarTodos) {
+      // Seleciona todas as linhas de atualização
+      const todas = dadosAnalise.dados.filter(item => item.acao === 'confirmar_atualizacao').map(item => item.linha);
+      setLinhasParaAtualizar(todas);
+      setSelecionarTodos(true);
+    } else {
+      setLinhasParaAtualizar([]);
+      setSelecionarTodos(false);
+    }
+  };
+
+  // Seleção individual por checkbox
+  const handleSelecionarLinha = (linha: number) => {
+    setLinhasParaAtualizar((prev) => prev.includes(linha) ? prev.filter(l => l !== linha) : [...prev, linha]);
   };
 
   // Executar ação individual
@@ -365,57 +405,119 @@ const ImportacaoInterativa = () => {
       return;
     }
 
-    const acoesPendentes = dadosAnalise.dados
-      .filter((item: DadosItem) => item.acao === 'criar_novo' || item.acao === 'sem_alteracao');
-
-    if (acoesPendentes.length === 0) return;
+    // 🎯 LÓGICA CORRIGIDA: Processar automaticamente APENAS os NOVOS cadastros
+    // Não exige que o usuário marque nada para atualização
+    const novos = dadosAnalise.dados.filter((item: DadosItem) => item.acao === 'criar_novo');
+    
+    if (novos.length === 0) {
+      alert('Nenhum novo cadastro para processar. Se deseja atualizar registros existentes, use o botão "Atualizar Todos".');
+      return;
+    }
 
     try {
       setProcessando(true);
       setProgresso(0);
 
-      // Importar usando excelUtils
-      const membrosImportados = await importFromExcel(arquivoAtual);
+      // Monta o payload com os NOVOS membros (objetos Member completos)
+      const membrosNovos = novos.map(item => item.membroCompleto).filter(Boolean);
 
-      console.log(`📊 Processando ${membrosImportados.length} membros...`);
-
-      // Enviar para o backend (com delay de 2 segundos entre cada)
+      // Envia para o backend
       const response = await fetch('http://localhost:5001/api/members/batch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          members: membrosImportados,
-          replaceAll: true
+          members: membrosNovos,
+          replaceAll: false
         }),
       });
 
       const resultado = await response.json();
 
-      if (resultado.stats) {
+      if (resultado.success) {
         setEstatisticasFinais({
-          total: resultado.stats.total_received,
-          criados: resultado.stats.success,
-          erros: resultado.stats.errors,
-          pulados: resultado.stats.duplicates || 0,
-          totalFinal: resultado.stats.success
+          total: membrosNovos.length,
+          criados: resultado.inserted || membrosNovos.length,
+          atualizados: 0,
+          erros: resultado.errors?.length || 0,
+          ignorados: resultado.ignored || 0
         });
-
         setProgresso(100);
         setEtapa('concluido');
-
-        alert(`✅ Importação concluída!\n\n` +
-              `📊 Total: ${resultado.stats.total_received}\n` +
-              `✅ Criados: ${resultado.stats.success}\n` +
-              `⏭️ Duplicatas: ${resultado.stats.duplicates || 0}\n` +
-              `❌ Erros: ${resultado.stats.errors}`);
+        alert(`✅ Novos cadastros processados com sucesso!\n\n` +
+              `📊 Total: ${membrosNovos.length}\n` +
+              `✅ Criados: ${resultado.inserted || membrosNovos.length}\n` +
+              `❌ Erros: ${resultado.errors?.length || 0}`);
       } else {
         throw new Error(resultado.message || 'Erro desconhecido');
       }
     } catch (error) {
       console.error('❌ Erro ao processar:', error);
-      alert('❌ Erro ao processar importação: ' + (error as Error).message);
+      alert('❌ Erro ao processar novos cadastros: ' + (error as Error).message);
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  // 🔄 Função para processar ATUALIZAÇÕES (registros marcados pelo usuário)
+  const processarAtualizacoes = async () => {
+    if (!dadosAnalise || !dadosAnalise.dados) return;
+    if (!arquivoAtual) {
+      alert('❌ Arquivo não encontrado. Por favor, faça upload novamente.');
+      return;
+    }
+
+    // Filtra os itens marcados para atualização
+    const itensParaAtualizar = dadosAnalise.dados.filter((item: DadosItem) => linhasParaAtualizar.includes(item.linha));
+    if (itensParaAtualizar.length === 0) {
+      alert('Nenhum registro marcado para atualização. Clique em "Atualizar" nas linhas desejadas.');
+      return;
+    }
+
+    try {
+      setProcessando(true);
+      setProgresso(0);
+
+      // Monta o payload para atualização
+      const membrosParaAtualizar = itensParaAtualizar.map(item => ({
+        ...item
+      }));
+
+      // Envia para o backend
+      const response = await fetch('http://localhost:5001/api/members/batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          members: membrosParaAtualizar,
+          replaceAll: false
+        }),
+      });
+
+      const resultado = await response.json();
+
+      if (resultado.success) {
+        setEstatisticasFinais({
+          total: membrosParaAtualizar.length,
+          atualizados: resultado.updated || membrosParaAtualizar.length,
+          criados: 0,
+          erros: resultado.errors?.length || 0,
+          ignorados: resultado.ignored || 0
+        });
+        setProgresso(100);
+        setEtapa('concluido');
+        alert(`✅ Atualização concluída!\n\n` +
+              `📊 Total: ${membrosParaAtualizar.length}\n` +
+              `✅ Atualizados: ${resultado.updated || membrosParaAtualizar.length}\n` +
+              `❌ Erros: ${resultado.errors?.length || 0}`);
+      } else {
+        throw new Error(resultado.message || 'Erro desconhecido');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao processar:', error);
+      alert('❌ Erro ao processar atualizações: ' + (error as Error).message);
     } finally {
       setProcessando(false);
     }
@@ -655,6 +757,14 @@ const ImportacaoInterativa = () => {
             <Button onClick={processarTodosAutomaticos}>
               Processar Automáticos
             </Button>
+            <Button
+              onClick={processarAtualizacoes}
+              variant="secondary"
+              disabled={linhasParaAtualizar.length === 0}
+              style={{ display: 'inline-block', minWidth: 160 }}
+            >
+              Atualizar Todos {linhasParaAtualizar.length > 0 ? `(${linhasParaAtualizar.length})` : ''}
+            </Button>
             <Button variant="outline" onClick={reiniciar}>
               Cancelar
             </Button>
@@ -681,6 +791,13 @@ const ImportacaoInterativa = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead style={{ width: 40 }}>
+                  <Checkbox
+                    checked={selecionarTodos}
+                    onCheckedChange={handleSelecionarTodos}
+                    aria-label="Selecionar todos para atualização"
+                  />
+                </TableHead>
                 <TableHead>Linha</TableHead>
                 <TableHead>ID Externo</TableHead>
                 <TableHead>Nome</TableHead>
@@ -695,9 +812,9 @@ const ImportacaoInterativa = () => {
                 const resultado = resultados.find(r => r.linha === item.linha);
                 const isNovo = item.acao === 'criar_novo';
                 const isAtualizacao = item.acao === 'confirmar_atualizacao';
-                
+                const checked = linhasParaAtualizar.includes(item.linha);
                 return (
-                  <TableRow 
+                  <TableRow
                     key={item.linha}
                     className={
                       isNovo ? 'bg-blue-50/50 hover:bg-blue-100/50' :
@@ -705,6 +822,14 @@ const ImportacaoInterativa = () => {
                       'hover:bg-gray-50'
                     }
                   >
+                    <TableCell>
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => handleSelecionarLinha(item.linha)}
+                        aria-label={`Selecionar linha ${item.linha} para atualização`}
+                        disabled={!isAtualizacao}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{item.linha}</TableCell>
                     <TableCell>{item.idExterno || '-'}</TableCell>
                     <TableCell className="font-medium">{item.nomeCompleto || item.nome}</TableCell>

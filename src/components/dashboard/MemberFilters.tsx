@@ -35,12 +35,17 @@ export const MemberFilters = ({ members, filters, onFiltersChange }: MemberFilte
     key: K,
     value: MemberFiltersType[K]
   ) => {
+    // Nunca remover faixaEtaria, sexo ou idadeRange ao aplicar outros filtros
     const newFilters = { ...filters };
-    
     const isValueEmpty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
 
     if (isValueEmpty) {
-      delete newFilters[key];
+      // Só remove se não for faixaEtaria, sexo ou idadeRange
+      if (key !== 'faixaEtaria' && key !== 'sexo' && key !== 'idadeRange') {
+        delete newFilters[key];
+      } else {
+        newFilters[key] = undefined;
+      }
     } else {
       newFilters[key] = value;
     }

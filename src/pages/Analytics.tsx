@@ -1,5 +1,5 @@
 // Local do arquivo: src/pages/Analytics.tsx
-// ✅ CÓDIGO FINAL E CORRETO
+// ✅ MELHORADO COM ANIMAÇÕES CSS
 
 import { useMemo } from 'react';
 import { useNavigate } from "react-router-dom";
@@ -16,28 +16,37 @@ const Analytics = () => {
 
   const activeMembers = useMemo(() => members.filter(m => m.status === 'ativo'), [members]);
 
-  // Função para os gráficos de Pizza, Barra e Mapa
   const handleChartClick = (key: keyof MemberFilters, value: string) => {
     onFiltersChange({ [key]: value, statusGeral: 'ativo' });
     navigate('/');
   };
 
-  // ✅ ESTA É A FUNÇÃO QUE ESTAVA FALTANDO E QUE CORRIGE O ERRO.
-  // Ela será chamada quando você clicar em "Líderes" ou "Professores".
   const handleFunctionClick = (func: 'lider' | 'professorEBQ') => {
     onFiltersChange({ [func]: true, statusGeral: 'ativo' });
     navigate('/');
   }
 
   return (
-    <div className="space-y-6">
-       {/* A chamada abaixo agora funciona porque a função handleFunctionClick existe */}
-       <AnalyticsSummary members={activeMembers} onFunctionClick={handleFunctionClick} />
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GenderChart members={activeMembers} onSegmentClick={(sexo) => handleChartClick('sexo', sexo as 'M' | 'F')} />
-        <AgeChart members={activeMembers} onBarClick={(faixa) => handleChartClick('faixaEtaria', faixa)} />
+    <div className="space-y-6 animate-fadeIn">
+      {/* Cards de resumo com animação escalonada */}
+      <div className="animate-slideDown">
+        <AnalyticsSummary members={activeMembers} onFunctionClick={handleFunctionClick} />
       </div>
-      <NeighborhoodMap members={activeMembers} onNeighborhoodClick={(bairro) => handleChartClick('bairro', bairro)} />
+      
+      {/* Gráficos com animação escalonada */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="animate-slideRight" style={{ animationDelay: '0.1s' }}>
+          <GenderChart members={activeMembers} onSegmentClick={(sexo) => handleChartClick('sexo', sexo as 'M' | 'F')} />
+        </div>
+        <div className="animate-slideLeft" style={{ animationDelay: '0.2s' }}>
+          <AgeChart members={activeMembers} onBarClick={(faixa) => handleChartClick('faixaEtaria', faixa)} />
+        </div>
+      </div>
+      
+      {/* Mapa de bairros com animação de subida */}
+      <div className="animate-slideUp" style={{ animationDelay: '0.3s' }}>
+        <NeighborhoodMap members={activeMembers} onNeighborhoodClick={(bairro) => handleChartClick('bairro', bairro)} />
+      </div>
     </div>
   );
 };

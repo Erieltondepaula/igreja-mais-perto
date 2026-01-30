@@ -34,7 +34,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const response = await fetch(`${API_BASE_URL}/members`);
       if (response.ok) {
         const data = await response.json();
-        setMembers(data);
+        
+        // Converter situacaoAtual para status e construir URL completa do avatar
+        const membersWithStatus = data.map((member: any) => ({
+          ...member,
+          status: member.situacaoAtual === 'Ativo' ? 'ativo' : 'desligado',
+          avatar_url: member.avatarUrl ? `http://localhost:5001${member.avatarUrl}` : undefined
+        }));
+        
+        setMembers(membersWithStatus);
         console.log('✅ Dados carregados do PostgreSQL:', data.length, 'membros');
       } else {
         const errorText = await response.text();

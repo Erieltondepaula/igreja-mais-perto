@@ -2,11 +2,11 @@
 // ✅ CÓDIGO FINAL COM O CALENDÁRIO DE VOLTA NA SIDEBAR
 
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { BarChart2, Users, CalendarDays, Upload, FileSpreadsheet } from "lucide-react";
+import { BarChart2, Users, CalendarDays, Upload, FileSpreadsheet, Settings } from "lucide-react";
 import { Header } from "@/components/dashboard/Header";
 import { useAppContext } from "@/contexts/useAppContext";
 import { AppCalendar } from "@/components/dashboard/Calendar"; // Importar o calendário da sidebar
-import { ScrollArea } from "@/components/ui/scroll-area"; 
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Layout = () => {
   const { members, onFiltersChange, filters } = useAppContext();
@@ -32,8 +32,7 @@ export const Layout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* ✅ Aumentar a largura da sidebar novamente */}
+    <div className="min-h-screen flex">
       <aside className="w-80 bg-card border-r flex flex-col">
         <div className="p-4">
             <h1 className="text-2xl font-bold text-center">Menu</h1>
@@ -53,6 +52,9 @@ export const Layout = () => {
             <NavLink to="/conversor" className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive && "bg-muted text-primary"}`}>
                 <FileSpreadsheet className="h-4 w-4" /> Conversor de Arquivos
             </NavLink>
+            <NavLink to="/configuracoes" className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${isActive && "bg-muted text-primary"}`}>
+                <Settings className="h-4 w-4" /> Configurações da Igreja
+            </NavLink>
             </nav>
         </div>
         {/* ✅ ADICIONAR O CALENDÁRIO DE VOLTA À SIDEBAR */}
@@ -60,8 +62,8 @@ export const Layout = () => {
             <AppCalendar />
         </ScrollArea>
       </aside>
-      <div className="flex-1 flex flex-col">
-        <header className="p-4 border-b">
+      <div className="flex-1 flex flex-col" style={{ background: 'none' }}>
+        <header className="p-4">
            <Header members={members} onCardClick={handleCardClick} />
         </header>
         <main className="flex-1 p-6">

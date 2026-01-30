@@ -5,7 +5,6 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import ptBrLocale from '@fullcalendar/core/locales/pt-br';
 import { useAppContext } from '@/contexts/useAppContext';
 import { useCalendar } from '@/hooks/useCalendar';
 import { DateSelectArg, EventClickArg } from '@fullcalendar/core';
@@ -99,7 +98,7 @@ export default function CalendarPage() {
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
           }}
           initialView="dayGridMonth"
-          locale={ptBrLocale}
+          locale="pt-br"
           weekends={true}
           events={allEvents}
           selectable={true}

@@ -65,7 +65,10 @@ export const AppCalendar = () => {
 
   const birthdays = useMemo((): CalendarEvent[] => {
     return members
-      .filter(member => member.status === 'ativo' && member.dataNascimento)
+      .filter(member => 
+        (member.situacaoAtual === 'ativo' || member.status === 'ativo') && 
+        member.dataNascimento
+      )
       .map((member) => {
         // Converter data ISO para formato yyyy-MM-dd para o calendário
         let dateForCalendar = member.dataNascimento;
@@ -105,9 +108,10 @@ export const AppCalendar = () => {
             // Buscar o membro correspondente para verificar o sexo
             const member = members.find(m => `birthday-${m.id}` === event.id);
             if (member) {
-              if (member.sexo === 'M') {
+              const sexo = member.sexo?.toUpperCase();
+              if (sexo === 'M' || sexo === 'MASCULINO') {
                 acc[key].hasMale = true;
-              } else if (member.sexo === 'F') {
+              } else if (sexo === 'F' || sexo === 'FEMININO') {
                 acc[key].hasFemale = true;
               }
             }

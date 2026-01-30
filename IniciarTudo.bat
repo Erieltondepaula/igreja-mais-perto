@@ -78,18 +78,21 @@ echo.
 echo [4/4] Iniciando Frontend Build...
 echo ==========================================
 
-if not exist "dist" (
-    echo Build nao encontrada. Executando npm run build...
-    call npm run build
-    if not exist "dist" (
-        echo ERRO: Falha ao criar build!
-        pause
-        exit /b 1
-    )
-    echo OK: Build criada
-) else (
-    echo OK: Build encontrada
+REM Sempre rebuildar para garantir codigo atualizado
+echo Verificando se build precisa ser recriada...
+if exist "dist" (
+    echo Removendo build antiga...
+    rmdir /s /q dist
 )
+
+echo Criando nova build com codigo atualizado...
+call npm run build
+if not exist "dist" (
+    echo ERRO: Falha ao criar build!
+    pause
+    exit /b 1
+)
+echo OK: Build criada com sucesso!
 
 where http-server >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
@@ -97,7 +100,7 @@ if %ERRORLEVEL% NEQ 0 (
     call npm install -g http-server
 )
 
-start "FRONTEND-BUILD" cmd /k "cd /d %~dp0dist && title FRONTEND-BUILD-8080 && color 03 && echo ================================= && echo FRONTEND BUILD - PORTA 8080 && echo ================================= && http-server -p 8080 -a localhost --proxy http://localhost:8080?"
+start "FRONTEND-BUILD" cmd /k "cd /d %~dp0dist && title FRONTEND-BUILD-8080 && color 03 && echo ================================= && echo FRONTEND BUILD - PORTA 8080 && echo ================================= && http-server -p 8080 -a localhost -P http://localhost:8080?"
 
 echo Aguardando frontend inicializar...
 timeout /t 5 /nobreak >nul
@@ -164,12 +167,10 @@ echo.
 set /p OPEN_ALL="Deseja abrir aplicacao e pgAdmin no navegador? (S/n): "
 if /i not "%OPEN_ALL%"=="n" (
     echo.
-    echo Abrindo navegadores...
+    echo Abrindo navegador da aplicacao...
     timeout /t 2 /nobreak >nul
     start http://localhost:8080
-    timeout /t 2 /nobreak >nul
-    start http://localhost:5050/browser/
-    echo OK: Navegadores abertos!
+    echo OK: Navegador da aplicacao aberto!
 )
 
 echo.

@@ -1,7 +1,7 @@
 // Local do arquivo: src/components/dashboard/Header.tsx
 // ✅ CÓDIGO FINAL CORRIGIDO
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,15 +20,48 @@ export const Header = ({ members, onCardClick }: HeaderProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(churchName);
 
-  const activeMembers = members.filter(m => m.status === 'ativo');
+  // Carregar logo do banco de dados ao inicializar
+  useEffect(() => {
+    const loadChurchSettings = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/api/church-settings');
+        if (response.ok) {
+          const settings = await response.json();
+          if (settings.logo_url && !logoUrl) {
+            // Se existe logo no banco mas não no localStorage, sincronizar
+            const fullUrl = `http://localhost:5001${settings.logo_url}`;
+            setLogoUrl(fullUrl);
+            console.log('✅ Logo sincronizado do banco:', fullUrl);
+          }
+        }
+      } catch (error) {
+        console.log('ℹ️ Configurações da igreja ainda não criadas');
+      }
+    };
+    
+    loadChurchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Executar apenas na montagem do componente
+
+  // ✅ CORRIGIDO: Filtro correto para membros ativos (case-insensitive)
+  const activeMembers = members.filter(m => {
+    const situacao = m.situacaoAtual?.toLowerCase() || m.status?.toLowerCase();
+    return situacao === 'ativo';
+  });
 
   // ✅ Todos os cálculos necessários estão aqui
   const stats = {
     totalMembros: members.length,
     ativos: activeMembers.length,
     desligados: members.length - activeMembers.length,
-    homens: activeMembers.filter(m => m.sexo === 'M').length,
-    mulheres: activeMembers.filter(m => m.sexo === 'F').length,
+    homens: activeMembers.filter(m => {
+      const sexo = m.sexo?.toLowerCase();
+      return sexo === 'm' || sexo === 'masculino';
+    }).length,
+    mulheres: activeMembers.filter(m => {
+      const sexo = m.sexo?.toLowerCase();
+      return sexo === 'f' || sexo === 'feminino';
+    }).length,
     batizados: activeMembers.filter(m => m.batizado).length, // ✅ Apenas membros ativos
   };
   const naoBatizados = stats.ativos - stats.batizados; // ✅ Apenas ativos
@@ -45,27 +78,49 @@ export const Header = ({ members, onCardClick }: HeaderProps) => {
     console.log('📸 Logo selecionada:', file.name);
     
     const formData = new FormData();
-    formData.append('avatar', file); // A rota espera 'avatar'
+    formData.append('logo', file);
     
     try {
       console.log('🔄 Enviando logo para o servidor...');
-      const res = await fetch('http://localhost:5001/api/upload-avatar', {
+      
+      // Upload para /logos
+      const uploadRes = await fetch('http://localhost:5001/api/upload-church-logo', {
         method: 'POST',
         body: formData,
       });
       
-      if (!res.ok) {
-        throw new Error(`Erro HTTP: ${res.status}`);
+      if (!uploadRes.ok) {
+        throw new Error(`Erro HTTP: ${uploadRes.status}`);
       }
       
-      const data = await res.json();
-      console.log('✅ Logo enviada:', data);
+      const uploadData = await uploadRes.json();
+      console.log('✅ Logo enviada:', uploadData);
       
-      if (data.avatar_url) {
-        // Salvar URL completa
-        const fullUrl = `http://localhost:5001${data.avatar_url}`;
+      if (uploadData.logo_url) {
+        const fullUrl = `http://localhost:5001${uploadData.logo_url}`;
         setLogoUrl(fullUrl);
         console.log('✅ Logo URL atualizada:', fullUrl);
+
+        // Salvar no banco de dados church_settings
+        try {
+          const settingsRes = await fetch('http://localhost:5001/api/church-settings');
+          if (settingsRes.ok) {
+            const settings = await settingsRes.json();
+            
+            // Atualizar com novo logo_url
+            const updateRes = await fetch('http://localhost:5001/api/church-settings', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...settings, logo_url: uploadData.logo_url })
+            });
+            
+            if (updateRes.ok) {
+              console.log('✅ Logo salva no banco de dados church_settings');
+            }
+          }
+        } catch (dbError) {
+          console.warn('⚠️ Logo salva localmente mas não no banco:', dbError);
+        }
       }
     } catch (err) {
       console.error('❌ Erro ao fazer upload da logo:', err);

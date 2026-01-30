@@ -63,6 +63,7 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
   const [showAge, setShowAge] = useState(true);
   const [showPhoto, setShowPhoto] = useState(true);
   const [showBirthdayWeekday, setShowBirthdayWeekday] = useState(true);
+  const [showType, setShowType] = useState(true);
 
   // Abre o modal de configuração do PDF
   const handleOpenPdfConfig = () => {
@@ -77,7 +78,7 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
     const churchName = churchNameRaw ? JSON.parse(churchNameRaw) : 'Relatório de Membros';
     
     // ✅ Usa members que já está ordenado
-    exportToPDF(members, filters, logoUrl, churchName, 'relatorio-membros', showAge, showPhoto, showBirthdayWeekday);
+    exportToPDF(members, filters, logoUrl, churchName, 'relatorio-membros', showAge, showPhoto, showBirthdayWeekday, showType);
     setIsPdfConfigOpen(false);
   };
 
@@ -347,6 +348,16 @@ export const MemberList = ({ members, onMemberUpdate, onRefresh, sortField, sort
                 />
                 <Label htmlFor="show-birthday-weekday" className="cursor-pointer">
                   Incluir próximo aniversário (dia da semana)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="show-type" 
+                  checked={showType} 
+                  onCheckedChange={(checked) => setShowType(!!checked)}
+                />
+                <Label htmlFor="show-type" className="cursor-pointer">
+                  Incluir tipo de membro
                 </Label>
               </div>
               <div className="text-sm text-muted-foreground border-t pt-3">

@@ -6,7 +6,7 @@ export default defineConfig({
   base: './',
   server: {
     host: "0.0.0.0",
-    port: 5173,
+    port: 8080,
     strictPort: false,
     open: true,
   },
@@ -16,4 +16,16 @@ export default defineConfig({
     },
   },
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          recharts: ['recharts'],
+          xlsx: ['xlsx'],
+          // Adicione outras libs grandes se necessário
+        }
+      }
+    }
+  }
 });

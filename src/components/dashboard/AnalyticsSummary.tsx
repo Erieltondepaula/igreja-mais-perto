@@ -1,5 +1,5 @@
 // Local do arquivo: src/components/dashboard/AnalyticsSummary.tsx
-// ✅ CÓDIGO FINAL E CORRETO
+// ✅ CARDS DE LÍDERES E PROFESSORES EBQ
 
 import { Member } from '@/types/member';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,48 +12,82 @@ interface AnalyticsSummaryProps {
 
 export const AnalyticsSummary = ({ members, onFunctionClick }: AnalyticsSummaryProps) => {
   const activeMembers = members.filter(m => m.status === 'ativo');
+  const totalMembers = activeMembers.length;
 
   const stats = {
-    totalHomens: activeMembers.filter(m => m.sexo === 'M').length,
-    totalMulheres: activeMembers.filter(m => m.sexo === 'F').length,
     totalLideres: activeMembers.filter(m => m.lider).length,
     totalProfessores: activeMembers.filter(m => m.professorEBQ).length,
   };
 
+  const percentLideres = totalMembers > 0 ? ((stats.totalLideres / totalMembers) * 100).toFixed(0) : 0;
+  const percentProfessores = totalMembers > 0 ? ((stats.totalProfessores / totalMembers) * 100).toFixed(0) : 0;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">👨 Homens (Ativos)</CardTitle></CardHeader>
-        <CardContent><div className="text-2xl font-bold text-blue-600">{stats.totalHomens}</div></CardContent>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Card Líderes */}
+      <Card 
+        className="overflow-hidden group hover:shadow-lg transition-all duration-300 cursor-pointer border-l-4 border-l-yellow-500"
+        onClick={() => onFunctionClick('lider')}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <CardHeader className="pb-3 relative">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Crown className="h-4 w-4 text-yellow-500" />
+              Líderes
+            </span>
+            <Crown className="h-5 w-5 text-yellow-400" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="relative">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-3xl font-bold text-yellow-600">
+                {stats.totalLideres}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {percentLideres}% do total
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-700">
+                Clique p/ filtrar
+              </span>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">👩 Mulheres (Ativas)</CardTitle></CardHeader>
-        <CardContent><div className="text-2xl font-bold text-pink-600">{stats.totalMulheres}</div></CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Funções Atribuídas (Ativos)</CardTitle>
+      {/* Card Professores EBQ */}
+      <Card 
+        className="overflow-hidden group hover:shadow-lg transition-all duration-300 cursor-pointer border-l-4 border-l-green-500"
+        onClick={() => onFunctionClick('professorEBQ')}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <CardHeader className="pb-3 relative">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-green-500" />
+              Professores EBQ
+            </span>
+            <GraduationCap className="h-5 w-5 text-green-400" />
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex justify-around items-center pt-2">
-          {/* A correção está aqui: onClick usa "onFunctionClick" */}
-          <div 
-            className="text-center p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-            onClick={() => onFunctionClick('lider')}
-          >
-            <Crown className="h-6 w-6 text-yellow-500 mx-auto mb-1" />
-            <div className="text-2xl font-bold">{stats.totalLideres}</div>
-            <p className="text-xs text-muted-foreground">Líderes</p>
-          </div>
-          {/* E aqui também: onClick usa "onFunctionClick" */}
-          <div 
-            className="text-center p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-            onClick={() => onFunctionClick('professorEBQ')}
-          >
-            <GraduationCap className="h-6 w-6 text-green-500 mx-auto mb-1" />
-            <div className="text-2xl font-bold">{stats.totalProfessores}</div>
-            <p className="text-xs text-muted-foreground">Professores EBQ</p>
+        <CardContent className="relative">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-3xl font-bold text-green-600">
+                {stats.totalProfessores}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {percentProfessores}% do total
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
+                Clique p/ filtrar
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>

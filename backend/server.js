@@ -66,6 +66,55 @@ console.log('📁 Servindo avatares de:', avatarsPath);
 app.use('/api', avatarRouter);
 app.use('/api', importarXLSRouter);
 
+// 🔄 Rotas de sincronização com Google Sheets
+const googleSheetsSyncRouter = require('./routes/googleSheetsSync');
+app.use('/api', googleSheetsSyncRouter);
+
+// 📤 Upload de logo da igreja
+const multer = require('multer');
+const logoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const logoDir = path.join(__dirname, '..', 'public', 'logos');
+    if (!fs.existsSync(logoDir)) {
+      fs.mkdirSync(logoDir, { recursive: true });
+    }
+    cb(null, logoDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `church-logo${ext}`);
+  }
+});
+
+const logoUpload = multer({ storage: logoStorage });
+
+app.post('/api/upload-church-logo', logoUpload.single('logo'), (req, res) => {
+  try {
+    console.log('📤 Recebido request de upload de logo');
+    console.log('📁 Arquivo:', req.file);
+    
+    if (!req.file) {
+      console.error('❌ Nenhum arquivo recebido');
+      return res.status(400).json({ error: 'Nenhum arquivo enviado' });
+    }
+
+    const logoUrl = `/logos/${req.file.filename}`;
+    console.log(`✅ Logo da igreja salva: ${logoUrl}`);
+    logger.info(`✅ Logo da igreja enviada: ${logoUrl}`);
+    
+    res.json({ logo_url: logoUrl });
+  } catch (error) {
+    console.error('❌ Erro ao fazer upload da logo:', error);
+    logger.error('Erro ao fazer upload da logo:', error);
+    res.status(500).json({ error: 'Erro ao fazer upload da logo' });
+  }
+});
+
+// Servir logos
+const logosPath = path.join(__dirname, '..', 'public', 'logos');
+app.use('/logos', express.static(logosPath));
+console.log('🏢 Servindo logos de:', logosPath);
+
 // 🐘 INICIALIZAÇÃO POSTGRESQL
 async function initializeSystem() {
   logger.info('🔄 Inicializando sistema com PostgreSQL...');
@@ -93,16 +142,36 @@ async function initializeSystem() {
 function convertMemberToFrontend(member) {
   if (!member) return null;
   
+  // Retorna APENAS os campos no formato camelCase, sem duplicação
   return {
-    ...member,
+    id: member.id,
     idExterno: member.id_externo,
+    nome: member.nome,
+    sobrenome: member.sobrenome,
     nomeCompleto: member.nome_completo,
     dataNascimento: member.data_nascimento,
+    idade: member.idade,
+    mes: member.mes,
+    telefone: member.telefone,
+    sexo: member.sexo,
+    observacoes: member.observacoes,
     statusCivil: member.status_civil,
+    conjuge: member.conjuge,
+    parentesco: member.parentesco,
+    rua: member.rua,
+    numero: member.numero,
+    bairro: member.bairro,
+    cidade: member.cidade,
+    estado: member.estado,
+    cep: member.cep,
+    batizado: member.batizado,
+    membro: member.membro,
     situacaoAtual: member.situacao_atual,
+    lider: member.lider,
     professorEBQ: member.e_professor_ebq,
     faixaEtaria: member.faixa_etaria,
     pequenoGrupo: member.pequeno_grupo,
+    grupo: member.grupo,
     numeroDomes: member.numerodomes,
     avatarUrl: member.avatar_url,
     createdAt: member.created_at,
@@ -327,6 +396,79 @@ app.get('/api/test-id/:nome/:sobrenome', async (req, res) => {
 const importacaoRoutes = require('./routes/importacao');
 app.use('/api/importacao', importacaoRoutes);
 
+// ⚙️ CONFIGURAÇÕES DA IGREJA
+// GET: Obter configurações da igreja
+app.get('/api/church-settings', async (req, res) => {
+  try {
+    console.log('📥 GET /api/church-settings - Requisição recebida');
+    const result = await db.query('SELECT * FROM church_settings LIMIT 1');
+    console.log('✅ Query executada, linhas:', result.length);
+    
+    if (result.length === 0) {
+      console.log('⚠️  Nenhuma configuração encontrada');
+      return res.status(404).json({ error: 'Configurações não encontradas' });
+    }
+    
+    console.log('✅ Retornando configurações:', result[0]);
+    res.json(result[0]);
+  } catch (error) {
+    console.error('❌ Erro ao buscar configurações da igreja:');
+    console.error('  Mensagem:', error.message);
+    console.error('  Stack:', error.stack);
+    logger.error('Erro ao buscar configurações da igreja:', error);
+    res.status(500).json({ error: 'Erro ao buscar configurações', details: error.message });
+  }
+});
+
+// PUT: Atualizar configurações da igreja
+app.put('/api/church-settings', async (req, res) => {
+  try {
+    console.log('📥 PUT /api/church-settings - Requisição recebida');
+    console.log('📦 Body:', req.body);
+    
+    const { nome, denominacao, telefone, email, endereco, cidade, estado, cep, pais, logo_url } = req.body;
+    
+    // Verificar se existe alguma configuração
+    const existingResult = await db.query('SELECT id FROM church_settings LIMIT 1');
+    console.log('🔍 Configurações existentes:', existingResult.length);
+    
+    if (existingResult.length === 0) {
+      console.log('➕ Inserindo nova configuração...');
+      // Inserir nova configuração
+      const insertResult = await db.query(`
+        INSERT INTO church_settings (nome, denominacao, telefone, email, endereco, cidade, estado, cep, pais, logo_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *
+      `, [nome, denominacao, telefone, email, endereco, cidade, estado, cep, pais, logo_url]);
+      
+      console.log('✅ Configuração criada:', insertResult[0].id);
+      logger.info('✅ Configurações da igreja criadas');
+      return res.json(insertResult[0]);
+    } else {
+      console.log('🔄 Atualizando configuração existente...');
+      // Atualizar configuração existente
+      const updateResult = await db.query(`
+        UPDATE church_settings
+        SET nome = $1, denominacao = $2, telefone = $3, email = $4, 
+            endereco = $5, cidade = $6, estado = $7, cep = $8, pais = $9, logo_url = $10,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $11
+        RETURNING *
+      `, [nome, denominacao, telefone, email, endereco, cidade, estado, cep, pais, logo_url, existingResult[0].id]);
+      
+      console.log('✅ Configuração atualizada:', updateResult[0].id);
+      logger.info('✅ Configurações da igreja atualizadas');
+      return res.json(updateResult[0]);
+    }
+  } catch (error) {
+    console.error('❌ Erro ao atualizar configurações da igreja:');
+    console.error('  Mensagem:', error.message);
+    console.error('  Stack:', error.stack);
+    logger.error('Erro ao atualizar configurações da igreja:', error);
+    res.status(500).json({ error: 'Erro ao atualizar configurações', details: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 5001;
 
 // 🐘 INICIALIZAR POSTGRESQL E SUBIR SERVIDOR
@@ -339,9 +481,9 @@ initializeSystem().then(() => {
     logger.info(`🧪 Teste ID: http://localhost:${PORT}/api/test-id/ABNER/LIMA`);
     logger.info(`✅ Servidor ATIVO - aguardando requisições...`);
     
-    // 🧹 Iniciar limpeza automática de avatars (a cada 24 horas)
-    avatarCleanupService.startAutoCleanup(24);
-    logger.info(`🤖 Limpeza automática de avatars ativada (a cada 24h)`);
+    // 🧹 Limpeza automática de avatars DESATIVADA (para não afetar a inicialização)
+    // avatarCleanupService.startAutoCleanup(24);
+    logger.info(`🛑 Limpeza automática desativada`);
   });
 
   // Prevenir que o processo termine inesperadamente

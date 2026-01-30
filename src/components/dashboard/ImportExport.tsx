@@ -14,8 +14,8 @@ interface ImportExportProps {
   members: Member[];
   filteredMembers?: Member[];
   filters?: MemberFilters;
-  onImport: (members: Partial<Member>[]) => void;
-  onReplaceAll: (members: Partial<Member>[]) => void;
+  onImport: (members: Partial<Member>[]) => Promise<boolean>;
+  onReplaceAll: (members: Partial<Member>[]) => Promise<boolean>;
 }
 
 export const ImportExport = ({ members, filteredMembers, filters, onImport, onReplaceAll }: ImportExportProps) => {
@@ -34,21 +34,22 @@ export const ImportExport = ({ members, filteredMembers, filters, onImport, onRe
       // Importa diretamente do Excel usando a função do excelUtils
       const importedMembers = await importFromExcel(file);
       
-      console.log('✅ Membros importados:', importedMembers.length);
+      console.log('✅ Membros importados do Excel:', importedMembers.length);
       console.log('📊 Primeiros 3 membros:', importedMembers.slice(0, 3));
       
       if (importedMembers.length === 0) {
         throw new Error('Nenhum membro foi encontrado no arquivo');
       }
 
-      // Substitui todos os membros
-      onReplaceAll(importedMembers);
+      // 🐘 Envia para PostgreSQL via contexto (retorna Promise)
+      console.log('🔄 Enviando para PostgreSQL via API...');
+      const success = await onReplaceAll(importedMembers);
       
-      toast({
-        title: 'Importação concluída',
-        description: `${importedMembers.length} membros importados com sucesso!`,
-        variant: 'default'
-      });
+      if (!success) {
+        throw new Error('Falha ao enviar dados para o servidor');
+      }
+      
+      console.log('✅ Importação concluída com sucesso!');
 
     } catch (error: unknown) {
       console.error('❌ Erro na importação:', error);

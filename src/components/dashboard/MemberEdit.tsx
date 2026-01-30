@@ -12,10 +12,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { User } from 'lucide-react';
+import { User, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { AvatarCropDialog } from '@/components/ui/AvatarCropDialog';
+import { MemberRegistrationForm } from './MemberRegistrationForm';
+import { createRoot } from 'react-dom/client';
 
 interface MemberEditProps {
   member: Member | null;
@@ -217,6 +219,112 @@ export function MemberEdit({ member, isOpen, onClose, onSave }: MemberEditProps)
   const status = form.watch('status');
   const isMembro = form.watch('membro');
   const isDesligado = status === 'desligado';
+
+  // Função para imprimir a ficha de cadastro
+  const handlePrintForm = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Erro ao abrir janela",
+        description: "Por favor, permita pop-ups para imprimir a ficha.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const currentMember = form.getValues();
+    const memberData: Member = {
+      ...member,
+      ...currentMember
+    };
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>Preview - Ficha de Cadastro - ${memberData.nome}</title>
+        <style>
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+          }
+          @media print {
+            body { 
+              padding: 0;
+              background: white !important;
+              margin: 0;
+            }
+            .print-controls { 
+              display: none !important; 
+            }
+            @page {
+              margin: 0;
+              size: A4 portrait;
+            }
+          }
+          .print-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 9999;
+          }
+          .print-button, .close-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+          }
+          .print-button {
+            background: #10b981;
+            color: white;
+          }
+          .print-button:hover {
+            background: #059669;
+          }
+          .close-button {
+            background: #ef4444;
+            color: white;
+          }
+          .close-button:hover {
+            background: #dc2626;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-controls">
+          <button class="close-button" onclick="window.close()">✖ Fechar</button>
+          <button class="print-button" onclick="window.print()">🖨️ Imprimir</button>
+        </div>
+        <div id="root"></div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+
+    // Renderizar após um pequeno delay para garantir que tudo esteja pronto
+    setTimeout(() => {
+      const container = printWindow.document.getElementById('root');
+      if (container) {
+        const root = createRoot(container);
+        root.render(<MemberRegistrationForm member={memberData} />);
+      }
+    }, 100);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -462,8 +570,16 @@ export function MemberEdit({ member, isOpen, onClose, onSave }: MemberEditProps)
             )}
 
             <DialogFooter className="md:col-span-2">
-              <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-              <Button type="submit">Salvar Alterações</Button>
+              <div className="flex justify-between w-full">
+                <Button type="button" variant="outline" onClick={handlePrintForm} className="gap-2">
+                  <Printer className="h-4 w-4" />
+                  Imprimir Ficha
+                </Button>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+                  <Button type="submit">Salvar Alterações</Button>
+                </div>
+              </div>
             </DialogFooter>
           </form>
         </Form>

@@ -1,148 +1,162 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { SummaryCards } from '@/components/dashboard/SummaryCards';
 import { MemberFilters as MemberFiltersComponent } from '@/components/dashboard/MemberFilters';
 import { MemberList } from '@/components/dashboard/MemberList';
-import { ImportExport } from '@/components/dashboard/ImportExport';
-import { useToast } from '@/hooks/use-toast';
-import { Member, MemberFilters } from '@/types/member';
-import { filterMembers, calculateAge, getMemberType } from '@/utils/memberUtils';
 import { useAppContext } from '@/contexts/useAppContext';
+import { filterMembers, calculateAge, getAgeGroup, getMemberType } from '@/utils/memberUtils';
+import { Member } from '@/types/member';
 
 const Index = () => {
-  const { members, filters, onFiltersChange, onRefresh, onImport, onReplaceAll, onMemberUpdate } = useAppContext();
+  const { members, filters, onFiltersChange, onMemberUpdate } = useAppContext();
   const [sortField, setSortField] = useState<keyof Member | 'idade' | 'tipo' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const { toast } = useToast();
   const memberListRef = useRef<HTMLDivElement>(null);
 
-  const activeMembers = useMemo(() => {
-    return members.filter(m => m.status !== 'desligado');
-  }, [members]);
+  // Filtro final (agora usando todos os membros para permitir filtro de desligados)
+  const filteredMembers = useMemo(() => filterMembers(members, filters), [members, filters]);
 
-  const ageDistribution = useMemo(() => {
-    const distribution = { infancia: 0, criancas: 0, adolescentes: 0, jovens: 0, adultos: 0, idosos: 0 };
-    activeMembers.forEach(m => {
-      const age = calculateAge(m.dataNascimento);
-      if (age <= 6) distribution.infancia++;
-      else if (age <= 10) distribution.criancas++;
-      else if (age <= 17) distribution.adolescentes++;
-      else if (age <= 35) distribution.jovens++;
-      else if (age <= 59) distribution.adultos++;
-      else distribution.idosos++;
-    });
-    return distribution;
-  }, [activeMembers]);
-
-  // ✅ CORRIGIDO: Agora filtra de TODOS os membros, não apenas dos ativos
-  const filteredMembers = useMemo(() => {
-    return filterMembers(members, filters);
-  }, [members, filters]);
-
-  // ✅ MEMBROS ORDENADOS - Aplica ordenação aos membros filtrados
-  const sortedAndFilteredMembers = useMemo(() => {
+  // Ordenação dos membros filtrados
+  const sortedMembers = useMemo(() => {
     if (!sortField) return filteredMembers;
-    
-    return [...filteredMembers].sort((a, b) => {
-      // ✅ ORDENAÇÃO ESPECIAL POR DATA DE NASCIMENTO
+    const sorted = [...filteredMembers];
+    sorted.sort((a, b) => {
+      // Ordenação especial para data de nascimento: primeiro dia, depois mês (ignorando ano)
       if (sortField === 'dataNascimento') {
-        // Regra: Primeiro pelo MÊS (menor para maior), depois pelo DIA (se mês igual), ignora ANO
-        const dateA = new Date(a.dataNascimento || '1900-01-01');
-        const dateB = new Date(b.dataNascimento || '1900-01-01');
-        
-        const dayA = dateA.getUTCDate();
-        const dayB = dateB.getUTCDate();
-        const monthA = dateA.getUTCMonth(); // 0-11
-        const monthB = dateB.getUTCMonth();
-        
-        // Compara pelo mês primeiro
-        if (monthA !== monthB) {
-          return sortDirection === 'asc' ? monthA - monthB : monthB - monthA;
+        const parse = (dateStr: string) => {
+          if (!dateStr) return { day: 0, month: 0 };
+          const d = new Date(dateStr);
+          return { day: d.getDate(), month: d.getMonth() + 1 };
+        };
+        const aDate = parse(a.dataNascimento);
+        const bDate = parse(b.dataNascimento);
+        // Critério: primeiro mês, depois dia
+        if (aDate.month !== bDate.month) {
+          return sortDirection === 'asc' ? aDate.month - bDate.month : bDate.month - aDate.month;
         }
-        // Se o mês for igual, compara pelo dia
-        return sortDirection === 'asc' ? dayA - dayB : dayB - dayA;
+        if (aDate.day !== bDate.day) {
+          return sortDirection === 'asc' ? aDate.day - bDate.day : bDate.day - aDate.day;
+        }
+        return 0;
       }
-      
-      // Ordenação para outros campos
-      let valueA: string | number | boolean | undefined;
-      let valueB: string | number | boolean | undefined;
-      
+      let aValue: string | number = '';
+      let bValue: string | number = '';
       if (sortField === 'idade') {
-        valueA = calculateAge(a.dataNascimento);
-        valueB = calculateAge(b.dataNascimento);
+        aValue = calculateAge(a.dataNascimento);
+        bValue = calculateAge(b.dataNascimento);
       } else if (sortField === 'tipo') {
-        valueA = getMemberType(a);
-        valueB = getMemberType(b);
+        aValue = getMemberType(a);
+        bValue = getMemberType(b);
       } else {
-        valueA = a[sortField];
-        valueB = b[sortField];
+        aValue = a[sortField as keyof Member] as string | number;
+        bValue = b[sortField as keyof Member] as string | number;
       }
-      
-      // Ordenação
-      if (valueA === valueB) return 0;
-      
-      if (sortDirection === 'asc') {
-        return valueA > valueB ? 1 : -1;
-      } else {
-        return valueA < valueB ? 1 : -1;
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        if (sortDirection === 'asc') return aValue.localeCompare(bValue);
+        return bValue.localeCompare(aValue);
       }
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        if (sortDirection === 'asc') return aValue - bValue;
+        return bValue - aValue;
+      }
+      return 0;
     });
+    return sorted;
   }, [filteredMembers, sortField, sortDirection]);
 
+  // Handler para ordenação
   const handleSort = (field: keyof Member | 'idade' | 'tipo') => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
       setSortDirection('asc');
     }
   };
 
-  const handleFiltersChange = (newFilters: MemberFilters) => {
-    onFiltersChange(newFilters);
-  };
+  // Distribuição por faixa etária
+  const ageDistribution = useMemo(() => {
+    const dist = {
+      bebes: 0,
+      primeiraInfancia: 0,
+      infancia: 0,
+      adolescencia: 0,
+      jovemAdulto: 0,
+      adulto: 0,
+      meiaIdade: 0,
+      idoso: 0
+    };
+    filteredMembers.forEach(m => {
+      const group = getAgeGroup(calculateAge(m.dataNascimento));
+      if (group === '0-2') dist.bebes++;
+      else if (group === '3-5') dist.primeiraInfancia++;
+      else if (group === '6-11') dist.infancia++;
+      else if (group === '12-17') dist.adolescencia++;
+      else if (group === '18-29') dist.jovemAdulto++;
+      else if (group === '30-44') dist.adulto++;
+      else if (group === '45-59') dist.meiaIdade++;
+      else if (group === '60+') dist.idoso++;
+    });
+    return dist;
+  }, [filteredMembers]);
 
-  const handleCardClick = (statusGeral?: 'ativo' | 'desligado') => {
-    const newFilters = statusGeral ? { statusGeral } : {};
+  // Handler para clique nos cards de faixa etária
+
+  // Handler para clique nos cards de faixa etária (toggle)
+  const handleChartClick = (faixa: string) => {
+    const isSame = filters.faixaEtaria === faixa;
+    const newFilters = { ...filters, statusGeral: 'ativo' as 'ativo' };
+    if (isSame) {
+      delete newFilters.faixaEtaria;
+    } else {
+      newFilters.faixaEtaria = faixa;
+    }
     onFiltersChange(newFilters);
     memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Lógica para gráficos e mapas
-  const handleChartClick = (key: keyof MemberFilters, value: string) => {
-    onFiltersChange({ ...filters, [key]: value });
+  // Handler para filtro de sexo por gráfico (caso queira usar)
+  const handleSexClick = (sexo: string) => {
+    const isSame = filters.sexo === sexo;
+    const newFilters = { ...filters, statusGeral: 'ativo' as 'ativo' };
+    if (isSame) {
+      delete newFilters.sexo;
+    } else {
+      newFilters.sexo = sexo;
+    }
+    onFiltersChange(newFilters);
     memberListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="text-center">
-          <p className="text-xl text-muted-foreground">
+    <div className="min-h-screen">
+      <div className="container mx-auto p-6 space-y-6" style={{ pointerEvents: 'auto', opacity: 1 }}>
+        <div className="w-full text-center my-6">
+          <span style={{ color: '#fff', fontWeight: 700, fontSize: '2.5rem', letterSpacing: '0.01em', fontFamily: 'inherit', textShadow: '0 2px 8px #0008' }}>
             Sistema de gestão e controle de cadastro de membros
-          </p>
+          </span>
         </div>
-        <SummaryCards ageDistribution={ageDistribution} onAgeGroupClick={(faixa) => handleChartClick('faixaEtaria', faixa)} />
-        <ImportExport 
-          members={members} 
-          filteredMembers={filteredMembers}
+        <div className="w-full mb-8 z-0">
+          <SummaryCards ageDistribution={ageDistribution} onAgeGroupClick={handleChartClick} />
+        </div>
+        <MemberFiltersComponent
           filters={filters}
-          onImport={onImport} 
-          onReplaceAll={onReplaceAll} 
+          onFiltersChange={onFiltersChange}
+          members={members}
         />
-        <MemberFiltersComponent 
-          members={members} 
-          filters={filters} 
-          onFiltersChange={handleFiltersChange} 
-        />
-        <div ref={memberListRef} data-member-list>
-          <MemberList 
-            members={sortedAndFilteredMembers} 
+        <div ref={memberListRef}>
+          <MemberList
+            members={sortedMembers}
             onMemberUpdate={onMemberUpdate}
-            onRefresh={onRefresh}
             sortField={sortField}
             sortDirection={sortDirection}
+            onRefresh={() => {}}
             onSort={handleSort}
-            filters={filters}
+            filters={{
+              ...filters,
+              faixaEtaria: filters.faixaEtaria || undefined,
+              sexo: filters.sexo || undefined,
+              idadeRange: filters.idadeRange || undefined
+            }}
           />
         </div>
       </div>
