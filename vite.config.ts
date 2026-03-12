@@ -1,12 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   base: './',
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 8080,
     strictPort: false,
     open: true,
@@ -16,10 +15,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  plugins: [
-    react(),
-    mode === 'development' && componentTagger(),
-  ].filter(Boolean),
+  plugins: [react()],
   build: {
     rollupOptions: {
       output: {
@@ -27,8 +23,9 @@ export default defineConfig(({ mode }) => ({
           react: ['react', 'react-dom'],
           recharts: ['recharts'],
           xlsx: ['xlsx'],
+          // Adicione outras libs grandes se necessário
         }
       }
     }
   }
-}));
+});
