@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      church_settings: {
+        Row: {
+          church_name: string | null
+          created_at: string | null
+          id: string
+          logo_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          church_name?: string | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          church_name?: string | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       membros: {
         Row: {
           avatar_url: string | null
