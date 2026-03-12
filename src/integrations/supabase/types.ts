@@ -16,24 +16,48 @@ export type Database = {
     Tables: {
       church_settings: {
         Row: {
+          cep: string | null
           church_name: string | null
+          cidade: string | null
           created_at: string | null
+          denominacao: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
           id: string
           logo_url: string | null
+          pais: string | null
+          telefone: string | null
           updated_at: string | null
         }
         Insert: {
+          cep?: string | null
           church_name?: string | null
+          cidade?: string | null
           created_at?: string | null
+          denominacao?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
           id?: string
           logo_url?: string | null
+          pais?: string | null
+          telefone?: string | null
           updated_at?: string | null
         }
         Update: {
+          cep?: string | null
           church_name?: string | null
+          cidade?: string | null
           created_at?: string | null
+          denominacao?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
           id?: string
           logo_url?: string | null
+          pais?: string | null
+          telefone?: string | null
           updated_at?: string | null
         }
         Relationships: []
